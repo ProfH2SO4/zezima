@@ -1,0 +1,7 @@
+#HEADER#
+#bases_representation: A = [1, 0, 0, 0], B = [0, 1, 0, 0], C = [0, 0, 1, 0], D = [0, 0, 0, 1]
+#annotation_number: 5
+#annotation_presentation: promoter_motif=[1, 0, 0, 0, 0], exon=[0, 1, 0, 0, 0], intron=[0, 0, 1, 0, 0], orf=[0,0,0,1,0]
+#polyadenylation_site= [0,0,0,0,1]
+####END####
+[1, 0, 0, 0, 1, 0, 1, 0, 0], [0, 1, 0, 0, 1, 0, 1, 0, 0]
