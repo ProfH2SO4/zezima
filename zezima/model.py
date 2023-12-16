@@ -14,10 +14,10 @@ class TransformerModel(nn.Module):
         self.transformer_encoder = TransformerEncoder(encoder_layers, num_encoder_layers, enable_nested_tensor=False)
         self.encoder = nn.Linear(input_size, d_model)
         self.d_model = d_model
-        self.decoder = nn.Linear(d_model, input_size)
+        self.decoder = nn.Linear(d_model, 3)
 
-    def forward(self, src):
-        src = self.pos_encoder(src)
+    def forward(self, src, start_pos: int=0):
+        src = self.pos_encoder(src, start_pos)
         src = self.encoder(src) * math.sqrt(self.d_model)
         output = self.transformer_encoder(src)
         output = self.decoder(output)
@@ -36,7 +36,9 @@ class PositionalEncoding(nn.Module):
         pe[:, 0, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe)
 
-    def forward(self, x):
-        x = x + self.pe[:x.size(0)]
-        return self.dropout(x)
+    def forward(self, x, start_pos: int=0):
+        pe = self.pe[start_pos:start_pos + x.size(1)].repeat(1, x.size(0), 1)
+        x = x + pe
+        temp = self.dropout(x)
+        return temp
 
