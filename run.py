@@ -1,55 +1,98 @@
+from types import ModuleType
+from os.path import isfile
+
+import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from zezima.dataset import LimitedDataset
-from zezima.model import TransformerModel
-from config import BATCH_SIZE, input_size, d_model, nhead, num_encoder_layers, dim_feedforward, sequence_length
+from zezima.utils.dataloader import LimitedDataset
+from zezima.models.my_model import TransformerModel
+
+import config
+from config import TRAIN_MODE, VALIDATE_MODE, TEST_MODE
 
 
-dataset = LimitedDataset("/home/matej/git/zezima/fake_data/first_data_ann.txt")
-data_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=0)
-
-model = TransformerModel(input_size=input_size,
-                         d_model=d_model,
-                         nhead=nhead,
-                         num_encoder_layers=num_encoder_layers,
-                         dim_feedforward=dim_feedforward
-                         )
+from zezima.training.train import train_model
+from zezima.training.test import test_model, validate_model
+from zezima import log
 
 
-# Loss function and Optimizer
-criterion = nn.MSELoss()  # or nn.CrossEntropyLoss() for classification tasks
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+def load_config() -> ModuleType:
+    """
+    Load local config.py.
+    If exists config.py in /etc/zezima/ then overrides parameters in local config.py.
+    @return: configuration file
+    """
+    app_config: ModuleType = config
+    path: str = "/etc/zezima/config.py"
 
-# Loss function and Optimizer
-criterion = nn.MSELoss()  # or nn.CrossEntropyLoss() for classification tasks
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+    if not isfile(path):
+        return app_config
+    try:
+        with open(path, "rb") as rnf:
+            exec(compile(rnf.read(), "config.py", "exec"), app_config.__dict__)
+    except OSError as e:
+        print(f"File at {path} could not be loaded because of error: {e}")
+        raise e from e
+    return app_config
 
-num_epochs = 5
-# Training loop
-for epoch in range(num_epochs):
-    model.train()
-    total_loss = 0
 
-    for batch_idx, batch in enumerate(data_loader):
-        inputs, targets = batch
+def parse_namespace(config_: ModuleType) -> dict[str, any]:
+    """
+    Parse configuration file file to dict.
+    @param config_: configuration file
+    @return: parsed configuration file
+    """
+    parsed: dict[str, any] = {}
+    for key, value in config_.__dict__.items():
+        if not key.startswith('__'):
+            parsed[key] = value
+    return parsed
 
-        batch_size = inputs.size(0)
-        seq_len = inputs.size(1)
 
-        # Calculate the start position for the current batch
-        start_pos = batch_idx * batch_size * seq_len
+def main():
 
-        optimizer.zero_grad()
-        output = model(inputs, start_pos)
+    config_: ModuleType = load_config()
+    parsed_config: dict[str, any] = parse_namespace(config_)
 
-        # Compute loss
-        loss = criterion(output, targets)
-        total_loss += loss.item()
+    print("============ Setting Up Logger ============")
+    log.set_up_logger(config_.LOG_CONFIG)
 
-        # Backward pass and optimize
-        loss.backward()
-        optimizer.step()
+    dataset = LimitedDataset("./fake_data/first_data_ann.txt")
+    data_loader = DataLoader(dataset, batch_size=parsed_config["BATCH_SIZE"],
+                             shuffle=False, num_workers=parsed_config["NUM_OF_WORKERS"])
 
-    print(f"Epoch {epoch+1}/{num_epochs}, Loss: {total_loss / len(data_loader)}")
+    model = TransformerModel(input_size=parsed_config["INPUT_SIZE"],
+                             d_model=parsed_config["D_MODEL"],
+                             nhead=parsed_config["NHEAD"],
+                             num_encoder_layers=parsed_config["NUM_ENCODER_LAYERS"],
+                             dim_feedforward=parsed_config["DIM_FEEDFORWARD"],
+                             seq_length=parsed_config["SEQUENCE_LENGTH"],
+                             )
+
+    # Loss function and Optimizer
+    criterion = nn.MSELoss()  # or nn.CrossEntropyLoss() for classification tasks
+    optimizer = optim.Adam(model.parameters(), lr=parsed_config["LEARNING_RATE"])
+    state_matrix = torch.zeros(parsed_config["BATCH_SIZE"], parsed_config["SEQUENCE_LENGTH"], parsed_config["D_MODEL"])
+
+    if TRAIN_MODE:
+        log.debug("Training model")
+        train_model(model, criterion, optimizer, data_loader, state_matrix, parsed_config["NUM_EPOCHS"])
+    if VALIDATE_MODE:
+        log.debug("Validate model")
+        validate_model(model, criterion, data_loader, state_matrix)
+    if TEST_MODE:
+        log.debug("Testing model")
+        test_model(model, criterion, data_loader, state_matrix)
+
+
+if __name__ == "__main__":
+    main()
+
+
+
+
+
+
+

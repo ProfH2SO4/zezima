@@ -13,12 +13,15 @@ class LimitedDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
-    def __getitem__(self, idx):
-        if idx + self.bp_per_batch >= self.max_bp:
+    def __getitem__(self, idx: int):
+        end_idx: int = min(idx + self.bp_per_batch, len(self.data))
+        if idx >= len(self.data):
+            raise IndexError("Index out of bounds")
+        if end_idx > self.max_bp:
             raise IndexError("Index out of bounds")
 
-        inputs_sequence = [self.data[i] for i in range(idx, idx + self.bp_per_batch)]
-        targets_sequence = [self.read_boundary_line(self.data[i]) for i in range(idx, idx + self.bp_per_batch)]
+        inputs_sequence: list[list[int]] = [self.data[i] for i in range(idx, end_idx)]
+        targets_sequence: list[list[int]] = [self.read_boundary_line(i) for i in inputs_sequence]
 
         return torch.tensor(inputs_sequence, dtype=torch.float32), torch.tensor(targets_sequence, dtype=torch.float32)
 
@@ -30,7 +33,7 @@ class LimitedDataset(Dataset):
             return [0, 1, 0]
         return [0, 0, 1]
 
-    def read_sequence_line(self, idx: int) -> list[int]:
+    def read_sequence_line(self, idx: int) -> list[list[int]]:
         with open(self.sequence_file_path, 'r') as file:
             for i, line in enumerate(file):
                 if i == idx:
