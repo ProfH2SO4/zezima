@@ -1,3 +1,5 @@
+INPUT_DIRECTORY = "./fake_data"
+
 TRAIN_MODE = True
 VALIDATE_MODE = True
 TEST_MODE = False
