@@ -52,7 +52,6 @@ def parse_namespace(config_: ModuleType) -> dict[str, any]:
 
 
 def main():
-
     config_: ModuleType = load_config()
     parsed_config: dict[str, any] = parse_namespace(config_)
 
@@ -60,7 +59,7 @@ def main():
     log.set_up_logger(config_.LOG_CONFIG)
 
     dataset = LimitedDataset("./fake_data/first_data_ann.txt")
-    data_loader = DataLoader(dataset, batch_size=parsed_config["BATCH_SIZE"],
+    data_loader = DataLoader(dataset, batch_size=1,
                              shuffle=False, num_workers=parsed_config["NUM_OF_WORKERS"])
 
     model = TransformerModel(input_size=parsed_config["INPUT_SIZE"],
@@ -72,7 +71,7 @@ def main():
                              )
 
     # Loss function and Optimizer
-    criterion = nn.MSELoss()  # or nn.CrossEntropyLoss() for classification tasks
+    criterion = nn.CrossEntropyLoss()  # or nn.CrossEntropyLoss() for classification tasks
     optimizer = optim.Adam(model.parameters(), lr=parsed_config["LEARNING_RATE"])
     state_matrix = torch.zeros(parsed_config["BATCH_SIZE"], parsed_config["SEQUENCE_LENGTH"], parsed_config["D_MODEL"])
 
@@ -85,6 +84,8 @@ def main():
     if TEST_MODE:
         log.debug("Testing model")
         test_model(model, criterion, data_loader, state_matrix)
+
+    log.info("Done")
 
 
 if __name__ == "__main__":
