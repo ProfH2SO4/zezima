@@ -1,8 +1,9 @@
 INPUT_DIRECTORY = "./fake_data"
+MODEL_PATH = "./saved_models/model_state.pth"
 
 TRAIN_MODE = True
 VALIDATE_MODE = True
-TEST_MODE = False
+TEST_MODE = True
 BATCH_SIZE = 1
 NUM_OF_WORKERS = 0
 
@@ -34,9 +35,21 @@ LOG_CONFIG = {
             "address": "/dev/log",
             "facility": "local6",
         },
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "default",
+            "stream": "ext://sys.stdout",  # Use standard output
+        },
+        "file": {
+            "level": "DEBUG",
+            "class": "logging.FileHandler",
+            "formatter": "default",
+            "filename": "./logs/default.txt",  # Specify the file path
+        },
     },
     "loggers": {
-        "default": {"level": "DEBUG", "handlers": ["sys_logger6"], "propagate": True}
+        "default": {"level": "DEBUG", "handlers": ["sys_logger6", "console", "file"], "propagate": False}
     },
     "disable_existing_loggers": False,
 }

@@ -5,8 +5,6 @@ from logging.config import dictConfig
 
 LOGGER_NAME: str = "default"
 
-executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
-
 
 def set_up_logger(log_config: dict) -> None:
     """Set up the logger."""
@@ -26,25 +24,25 @@ def info(msg: str) -> None:
     """Log an info message."""
     function_before: str = inspect.stack()[1].function
     msg = f"function: {function_before} | {msg}"
-    executor.submit(get_logger().info, msg)
+    get_logger().info(msg)
 
 
 def debug(msg: str) -> None:
     """Log a debug message."""
     function_before: str = inspect.stack()[1].function
     msg = f"function: {function_before} | {msg}"
-    executor.submit(get_logger().debug, msg)
+    get_logger().debug(msg)
 
 
 def warning(msg: str) -> None:
     """Log a warning message."""
     function_before: str = inspect.stack()[1].function
     msg = f"function: {function_before} | {msg}"
-    executor.submit(get_logger().warning(msg))
+    get_logger().warning(msg)
 
 
 def error(msg: str) -> None:
     """Log an error message."""
     function_before: str = inspect.stack()[1].function
     msg = f"function: {function_before} | {msg}"
-    executor.submit(get_logger().error(msg))
+    get_logger().error(msg)

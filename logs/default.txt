@@ -1,0 +1,80 @@
+ZEZIMA - 2023-12-28 13:22:32 - INFO - Logger, Status: Ready 
+ZEZIMA - 2023-12-28 13:23:39 - DEBUG - function: main | Training model
+ZEZIMA - 2023-12-28 13:23:39 - INFO - function: main | Starting ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 13:23:39 - INFO - function: main | Ending ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 13:23:39 - DEBUG - function: main | Validate model
+ZEZIMA - 2023-12-28 13:23:39 - INFO - function: main | Starting ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 13:23:39 - DEBUG - function: validate_model |  Validation Loss: 0.40339183807373047
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: validate_model | Confusion Matrix: 9	0	0
+2	0	0
+2	0	0
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: validate_model | Average Validation Accuracy: 0.6923076923076923
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: validate_model | Precision: 0.78698224852071
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: validate_model | Recall: 0.6923076923076923
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: validate_model | F1 Score: 0.5664335664335665
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: main | Ending ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 13:23:43 - DEBUG - function: main | Testing model
+ZEZIMA - 2023-12-28 13:23:43 - INFO - function: main | Starting ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:29 - INFO - Logger, Status: Ready 
+ZEZIMA - 2023-12-28 14:03:29 - DEBUG - function: main | Training model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: train_model | Epoch 1/5, Loss: 0.4025923141411373
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: train_model | Epoch 2/5, Loss: 0.3867196866444179
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: train_model | Epoch 3/5, Loss: 0.39076597349984304
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: train_model | Epoch 4/5, Loss: 0.39285832217761446
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: train_model | Epoch 5/5, Loss: 0.400467859847205
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: main | Validating model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:30 - DEBUG - function: validate_model |  Validation Loss: 0.38540666018213543
+ZEZIMA - 2023-12-28 14:03:37 - INFO - Logger, Status: Ready 
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: main | Training model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: train_model | Epoch 1/5, Loss: 0.3830266467162541
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: train_model | Epoch 2/5, Loss: 0.40094153370176044
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: train_model | Epoch 3/5, Loss: 0.40037092566490173
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: train_model | Epoch 4/5, Loss: 0.40103839550699505
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: train_model | Epoch 5/5, Loss: 0.4082142540386745
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: main | Validating model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: validate_model |  Validation Loss: 0.3785426063197
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: validate_model | Confusion Matrix: 7	2	0
+2	0	0
+0	2	0
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: validate_model | Average Validation Accuracy: 0.5384615384615384
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: validate_model | Precision: 0.6923076923076923
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: validate_model | Recall: 0.5384615384615384
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: validate_model | F1 Score: 0.6923076923076923
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: main | Testing model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:37 - DEBUG - function: test_model |  Testing Loss: 0.3785426063197
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: test_model | Confusion Matrix: 7	2	0
+2	0	0
+0	2	0
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: test_model | Average Validation Accuracy: 0.5384615384615384
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: test_model | Precision: 0.6923076923076923
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: test_model | Recall: 0.5384615384615384
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: test_model | F1 Score: 0.6923076923076923
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: main | Processed ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:03:37 - INFO - function: main | Done
+ZEZIMA - 2023-12-28 14:19:46 - INFO - Logger, Status: Ready 
+ZEZIMA - 2023-12-28 14:19:46 - DEBUG - function: main | Training model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: train_model | Epoch 1/5, Loss: 0.38500081641333445
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: train_model | Epoch 2/5, Loss: 0.40402091826711384
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: train_model | Epoch 3/5, Loss: 0.39520847371646334
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: train_model | Epoch 4/5, Loss: 0.403163343667984
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: train_model | Epoch 5/5, Loss: 0.3914890970502581
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: main | Validating model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: validate_model |  Validation Loss: 0.3629462080342429
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: validate_model | Confusion Matrix: 1	2	6
+0	0	2
+0	1	1
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: validate_model | Average Validation Accuracy: 0.15384615384615385
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: validate_model | Precision: 0.7094017094017093
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: validate_model | Recall: 0.15384615384615385
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: validate_model | F1 Score: 0.32027972027972024
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: main | Testing model on ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:19:47 - DEBUG - function: test_model |  Testing Loss: 0.3629462080342429
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: test_model | Confusion Matrix: 1	2	6
+0	0	2
+0	1	1
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: test_model | Average Validation Accuracy: 0.15384615384615385
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: test_model | Precision: 0.7094017094017093
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: test_model | Recall: 0.15384615384615385
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: test_model | F1 Score: 0.32027972027972024
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: main | Processed ./fake_data/first_data_ann.txt
+ZEZIMA - 2023-12-28 14:19:47 - INFO - function: main | Done

@@ -1,7 +1,8 @@
 import torch
 
+from zezima import log
 
-def train_model(model, criterion, optimizer, data_loader, state_matrix, num_epochs):
+def train_model(model, criterion, optimizer, data_loader, state_matrix, num_epochs, model_path: str):
 
     for epoch in range(num_epochs):
         model.train()
@@ -15,7 +16,6 @@ def train_model(model, criterion, optimizer, data_loader, state_matrix, num_epoc
             if state_matrix.shape[1] != seq_len:
                 state_matrix = state_matrix[:, :seq_len, :]
             inputs, targets = batch
-            print(f"inputs: {inputs}, targets: {targets} batch_idx: {batch_idx}")
             optimizer.zero_grad()
             output, output_state_matrix = model(inputs, state_matrix.detach())
             state_matrix = output_state_matrix
@@ -27,6 +27,6 @@ def train_model(model, criterion, optimizer, data_loader, state_matrix, num_epoc
             loss.backward()
             optimizer.step()
 
-        print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(data_loader)}")
+        log.debug(f"Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(data_loader)}")
 
-    torch.save(model.state_dict(), './saved_models/model_state.pth')
+    torch.save(model.state_dict(), model_path)
