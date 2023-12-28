@@ -49,7 +49,11 @@ LOG_CONFIG = {
         },
     },
     "loggers": {
-        "default": {"level": "DEBUG", "handlers": ["sys_logger6", "console", "file"], "propagate": False}
+        "default": {
+            "level": "DEBUG",
+            "handlers": ["sys_logger6", "console", "file"],
+            "propagate": False,
+        }
     },
     "disable_existing_loggers": False,
 }

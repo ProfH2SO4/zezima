@@ -47,7 +47,7 @@ def parse_namespace(config_: ModuleType) -> dict[str, any]:
     """
     parsed: dict[str, any] = {}
     for key, value in config_.__dict__.items():
-        if not key.startswith('__'):
+        if not key.startswith("__"):
             parsed[key] = value
     return parsed
 
@@ -60,21 +60,32 @@ def create_file_if_not_exists(path_to_file: str) -> None:
 
     # Check if the file exists, and create it if it doesn't
     if not os.path.exists(path_to_file):
-        with open(path_to_file, 'w') as file:
+        with open(path_to_file, "w") as file:
             pass  # Create an empty file
 
 
 def setup_model_data_loader(file, parsed_config):
     dataset = LimitedDataset(file)
-    data_loader = DataLoader(dataset, batch_size=1, shuffle=False, num_workers=parsed_config["NUM_OF_WORKERS"])
-    model = TransformerModel(input_size=parsed_config["INPUT_SIZE"],
-                             d_model=parsed_config["D_MODEL"],
-                             nhead=parsed_config["NHEAD"],
-                             num_encoder_layers=parsed_config["NUM_ENCODER_LAYERS"],
-                             dim_feedforward=parsed_config["DIM_FEEDFORWARD"],
-                             seq_length=parsed_config["SEQUENCE_LENGTH"])
+    data_loader = DataLoader(
+        dataset,
+        batch_size=1,
+        shuffle=False,
+        num_workers=parsed_config["NUM_OF_WORKERS"],
+    )
+    model = TransformerModel(
+        input_size=parsed_config["INPUT_SIZE"],
+        d_model=parsed_config["D_MODEL"],
+        nhead=parsed_config["NHEAD"],
+        num_encoder_layers=parsed_config["NUM_ENCODER_LAYERS"],
+        dim_feedforward=parsed_config["DIM_FEEDFORWARD"],
+        seq_length=parsed_config["SEQUENCE_LENGTH"],
+    )
     criterion = nn.CrossEntropyLoss()
-    state_matrix = torch.zeros(parsed_config["BATCH_SIZE"], parsed_config["SEQUENCE_LENGTH"], parsed_config["D_MODEL"])
+    state_matrix = torch.zeros(
+        parsed_config["BATCH_SIZE"],
+        parsed_config["SEQUENCE_LENGTH"],
+        parsed_config["D_MODEL"],
+    )
     return model, data_loader, criterion, state_matrix
 
 
@@ -89,17 +100,27 @@ def main() -> None:
     log.set_up_logger(config_.LOG_CONFIG)
 
     directory: str = parsed_config["INPUT_DIRECTORY"]
-    files: list[str] = [os.path.join(directory, f) for f in os.listdir(directory) if f.endswith('.txt')]
+    files: list[str] = [
+        os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".txt")
+    ]
 
     for file in files:
-        model, data_loader, criterion, state_matrix = setup_model_data_loader(file, parsed_config)
+        model, data_loader, criterion, state_matrix = setup_model_data_loader(
+            file, parsed_config
+        )
 
         if TRAIN_MODE:
             log.debug(f"Training model on {file}")
             optimizer = optim.Adam(model.parameters())
-            train_model(model, criterion, optimizer, data_loader,
-                        state_matrix,
-                        parsed_config["NUM_EPOCHS"], parsed_config["MODEL_PATH"])
+            train_model(
+                model,
+                criterion,
+                optimizer,
+                data_loader,
+                state_matrix,
+                parsed_config["NUM_EPOCHS"],
+                parsed_config["MODEL_PATH"],
+            )
 
         if VALIDATE_MODE:
             log.debug(f"Validating model on {file}")
@@ -117,10 +138,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-

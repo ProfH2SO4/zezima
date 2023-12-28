@@ -22,7 +22,9 @@ def read_boundary_line(sequence: list[int]) -> list[int]:
 
 
 class LimitedDataset(Dataset):
-    def __init__(self, sequence_file_path: str, bp_per_batch: int = 2, testing_data: bool = False):
+    def __init__(
+        self, sequence_file_path: str, bp_per_batch: int = 2, testing_data: bool = False
+    ):
         self.sequence_file_path = sequence_file_path
         self.bp_per_batch = bp_per_batch
         if self.bp_per_batch > MAXIMAL_BP_PER_BATCH:
@@ -40,12 +42,16 @@ class LimitedDataset(Dataset):
             raise IndexError("Index out of bounds")
 
         inputs_sequence: list[list[int]] = [self.data[i] for i in range(idx, end_idx)]
-        targets_sequence: list[list[int]] = [read_boundary_line(i) for i in inputs_sequence]
+        targets_sequence: list[list[int]] = [
+            read_boundary_line(i) for i in inputs_sequence
+        ]
 
-        return torch.tensor(inputs_sequence, dtype=torch.float32), torch.tensor(targets_sequence, dtype=torch.float32)
+        return torch.tensor(inputs_sequence, dtype=torch.float32), torch.tensor(
+            targets_sequence, dtype=torch.float32
+        )
 
     def read_sequence_line(self, idx: int) -> list[list[int]]:
-        with open(self.sequence_file_path, 'r') as file:
+        with open(self.sequence_file_path, "r") as file:
             for i, line in enumerate(file):
                 if i == idx:
                     return self.parse_line(line)
@@ -54,9 +60,9 @@ class LimitedDataset(Dataset):
     def read_data(self):
         bp_count = 0
         start_reading = False
-        with open(self.sequence_file_path, 'r') as file:
+        with open(self.sequence_file_path, "r") as file:
             for line in file:
-                if line.strip() == '####END####':
+                if line.strip() == "####END####":
                     start_reading = True
                     continue
                 if start_reading:
@@ -67,17 +73,19 @@ class LimitedDataset(Dataset):
     def parse_line(self, line: str) -> list[list[int]]:
         line = line.strip()[1:-1]
         # Remove leading/trailing whitespace and split by '],'
-        vectors = line.strip().split('],')
+        vectors = line.strip().split("],")
         # Process each vector
         sequence = []
         for vector in vectors:
             # Clean up the vector string and convert to integers
-            cleaned_vector = vector.strip('[] \n').split(',')
+            cleaned_vector = vector.strip("[] \n").split(",")
             # Filter out empty strings and convert the rest to integers
             int_vector = [int(x) for x in cleaned_vector if x.strip()]
 
             if self.testing_data:
-                int_vector = int_vector[:-1]  # Remove the last element if testing_data is True
+                int_vector = int_vector[
+                    :-1
+                ]  # Remove the last element if testing_data is True
 
             sequence.append(int_vector)
         return sequence

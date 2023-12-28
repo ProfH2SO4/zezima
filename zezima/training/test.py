@@ -7,7 +7,6 @@ from zezima import log
 def validate_model(model, criterion, data_loader, state_matrix) -> None:
     model.eval()  # Set the model to evaluation mode
 
-
     total_loss: int = 0
     all_predictions: list[int] = []
     all_true_labels: list[int] = []
@@ -32,23 +31,26 @@ def validate_model(model, criterion, data_loader, state_matrix) -> None:
             all_predictions.extend(predictions)
             all_true_labels.extend(true_labels)
 
-
         log.debug(f" Validation Loss: {total_loss / len(data_loader)}")
     correct_predictions = sum(p == t for p, t in zip(all_predictions, all_true_labels))
     total_predictions = len(all_predictions)
 
     cm = confusion_matrix(all_true_labels, all_predictions)
     average_accuracy = correct_predictions / total_predictions
-    precision = precision_score(all_true_labels, all_predictions, average='weighted', zero_division=1)
-    recall = recall_score(all_true_labels, all_predictions, average='weighted', zero_division=1)
-    f1 = f1_score(all_true_labels, all_predictions, average='weighted', zero_division=1)
+    precision = precision_score(
+        all_true_labels, all_predictions, average="weighted", zero_division=1
+    )
+    recall = recall_score(
+        all_true_labels, all_predictions, average="weighted", zero_division=1
+    )
+    f1 = f1_score(all_true_labels, all_predictions, average="weighted", zero_division=1)
 
-    cm_str = '\n'.join(['\t'.join([str(cell) for cell in row]) for row in cm])
+    cm_str = "\n".join(["\t".join([str(cell) for cell in row]) for row in cm])
     log.info(f"Confusion Matrix: {cm_str}")
-    log.info(f'Average Validation Accuracy: {average_accuracy}')
-    log.info(f'Precision: {precision}')
-    log.info(f'Recall: {recall}')
-    log.info(f'F1 Score: {f1}')
+    log.info(f"Average Validation Accuracy: {average_accuracy}")
+    log.info(f"Precision: {precision}")
+    log.info(f"Recall: {recall}")
+    log.info(f"F1 Score: {f1}")
 
 
 def test_model(model, criterion, data_loader, state_matrix):
@@ -84,13 +86,17 @@ def test_model(model, criterion, data_loader, state_matrix):
 
     cm = confusion_matrix(all_true_labels, all_predictions)
     average_accuracy = correct_predictions / total_predictions
-    precision = precision_score(all_true_labels, all_predictions, average='weighted', zero_division=1)
-    recall = recall_score(all_true_labels, all_predictions, average='weighted', zero_division=1)
-    f1 = f1_score(all_true_labels, all_predictions, average='weighted', zero_division=1)
+    precision = precision_score(
+        all_true_labels, all_predictions, average="weighted", zero_division=1
+    )
+    recall = recall_score(
+        all_true_labels, all_predictions, average="weighted", zero_division=1
+    )
+    f1 = f1_score(all_true_labels, all_predictions, average="weighted", zero_division=1)
 
-    cm_str = '\n'.join(['\t'.join([str(cell) for cell in row]) for row in cm])
+    cm_str = "\n".join(["\t".join([str(cell) for cell in row]) for row in cm])
     log.info(f"Confusion Matrix: {cm_str}")
-    log.info(f'Average Validation Accuracy: {average_accuracy}')
-    log.info(f'Precision: {precision}')
-    log.info(f'Recall: {recall}')
-    log.info(f'F1 Score: {f1}')
+    log.info(f"Average Validation Accuracy: {average_accuracy}")
+    log.info(f"Precision: {precision}")
+    log.info(f"Recall: {recall}")
+    log.info(f"F1 Score: {f1}")
