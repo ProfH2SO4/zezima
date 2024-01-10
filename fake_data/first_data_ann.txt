@@ -1,9 +1,6 @@
 #HEADER#
-#bases_representation: A = [1, 0, 0, 0], B = [0, 1, 0, 0], C = [0, 0, 1, 0], D = [0, 0, 0, 1]
-#annotation_number: 5
-#annotation_presentation: promoter_motif=[1, 0, 0, 0, 0, 0], exon=[0, 1, 0, 0, 0, 0], intron=[0, 0, 1, 0, 0, 0], orf=[0, 0, 0, 1, 0, 0]
-#polyadenylation_site= [0, 0, 0, 0, 1, 0], start_gene= [0, 0, 0, 0, 0, 1], end_gene= [0, 0, 0, 0, 0, 2]
-#NOTE: 7 vectors, 1st and 7th has no annotation, gene is from 2nd to 6th
+#DATE: 2024-01-08
+#bp_vector_schema: ['A', 'C', 'G', 'T', 'PROMOTOR_MOTIF', 'ORF', 'exon', 'mRNA', 'miRNA', 'rRNA', 'CDS', 'POLY_ADENYL', 'gene']
+#description of feature: 0 = no present, 1 = start, 2 = continuation/ongoing, 3 = end
 ####END####
-[1, 0, 0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 0, 1, 0, 0, 0, 0, 1], [0, 1, 0, 0, 0, 1, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0, 1, 0, 0, 0],
-[0, 1, 0, 0, 0, 0, 0, 1, 0, 0], [0, 1, 0, 0, 0, 0, 0, 0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]	[0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0][0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]	[0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0][1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
