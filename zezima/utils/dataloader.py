@@ -1,35 +1,66 @@
+import ast
 import torch
 from torch.utils.data import Dataset
 
 MAXIMAL_BP_PER_BATCH = 100000
 
 
-def read_boundary_line(sequence: list[int]) -> list[int]:
+def read_boundary_line(
+    sequence: list[int], positions_to_look: tuple[int, int]
+) -> list[int]:
     """
-    Determine if base pair contains gene_start, gene_end or none of these.
+    Determine if the specified boundary in the sequence contains gene_start, gene_end or none of these.
     :param sequence: Sequence of vectors. Each vector represents bp with features.
-    :return: The boundary of gene.
-    a) [1, 0, 0] == current bp has neither gene_start nor gene_end
-    b) [0, 1, 0] == current bp has gene_start
-    c) [0, 0, 1] == current bp has gene_end
+    :param positions_to_look: Tuple indicating the boundary positions in the sequence to look for gene features.
+    :return: The boundary status of the gene.
+    [1, 0, 0] = no gene_start or gene_end
+    [0, 1, 0] = gene_start
+    [0, 0, 1] = gene_end
     """
-    gene_boundary: int = sequence[len(sequence) - 1]
-    if gene_boundary == 0:
-        return [1, 0, 0]
-    elif gene_boundary == 1:
-        return [0, 1, 0]
-    return [0, 0, 1]
+    start_pos, end_pos = positions_to_look
+    boundary_status = sequence[start_pos:end_pos]
+    return boundary_status
+
+
+def calculate_feature_boundary(
+    vector_schema: list[str], feature_to_find: str, max_feature_overlap: int
+) -> tuple[int, int]:
+    base_pairs_count = 4  # Assuming 'A', 'C', 'G', 'T' are always the first 4
+
+    # Find the index of the feature in the vector schema
+    feature_index = vector_schema.index(feature_to_find)
+
+    # Calculate the start index of the feature in the expanded vector
+    # Each non-base-pair feature is represented by 3 elements ([start, ongoing, end]) times max_feature_overlap
+    start_index = (
+        base_pairs_count + (feature_index - base_pairs_count) * 3 * max_feature_overlap
+    )
+
+    # Calculate the end index (exclusive) of the feature in the expanded vector
+    end_index = start_index + 3 * max_feature_overlap
+
+    return start_index, end_index
 
 
 class LimitedDataset(Dataset):
     def __init__(
-        self, sequence_file_path: str, bp_per_batch: int = 2, testing_data: bool = False
+        self,
+        sequence_file_path: str,
+        d_model: int,
+        bp_per_batch: int = 2,
+        testing_data: bool = False,
+        feature_to_find: str = "gene",
     ):
         self.sequence_file_path = sequence_file_path
         self.bp_per_batch = bp_per_batch
+        self.d_model = d_model
         if self.bp_per_batch > MAXIMAL_BP_PER_BATCH:
             raise "Maximal BP limit reached"
         self.testing_data = testing_data
+        self.feature_to_find = feature_to_find
+        self.positions_to_look: tuple[int, int] = 0, 0
+        self.max_feature_overlap = 1
+        self.bp_vector_schema = []
         self.data = []
         self.read_data()
 
@@ -37,18 +68,30 @@ class LimitedDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx: int):
-        end_idx: int = min(idx + self.bp_per_batch, len(self.data))
+        # Calculate the end index of the batch
+        end_idx = min(idx + self.bp_per_batch, len(self.data))
+
+        # Check if the index is within bounds
         if idx >= len(self.data):
             raise IndexError("Index out of bounds")
 
         inputs_sequence: list[list[int]] = [self.data[i] for i in range(idx, end_idx)]
         targets_sequence: list[list[int]] = [
-            read_boundary_line(i) for i in inputs_sequence
+            read_boundary_line(i, self.positions_to_look) for i in inputs_sequence
         ]
 
         return torch.tensor(inputs_sequence, dtype=torch.float32), torch.tensor(
             targets_sequence, dtype=torch.float32
         )
+
+    def convert_vector_to_torch(self, vector):
+        # Process each element in the vector. If an element is a list, convert it to a tensor
+        return [
+            torch.tensor(sub_vector, dtype=torch.float32)
+            if isinstance(sub_vector, list)
+            else sub_vector
+            for sub_vector in vector
+        ]
 
     def read_sequence_line(self, idx: int) -> list[list[int]]:
         with open(self.sequence_file_path, "r") as file:
@@ -58,34 +101,38 @@ class LimitedDataset(Dataset):
         return []
 
     def read_data(self):
-        bp_count = 0
         start_reading = False
         with open(self.sequence_file_path, "r") as file:
             for line in file:
+                if "#bp_vector_schema" in line.strip():
+                    self.bp_vector_schema = ast.literal_eval(line.split("=")[1].strip())
+                if "#max_feature_overlap" in line.strip():
+                    self.max_feature_overlap = int(line.split("=")[1].strip())
                 if line.strip() == "####END####":
+                    self.positions_to_look = calculate_feature_boundary(
+                        self.bp_vector_schema,
+                        self.feature_to_find,
+                        self.max_feature_overlap,
+                    )
                     start_reading = True
+                    continue
+                if line == "\n":
                     continue
                 if start_reading:
                     sequences: list[list[int]] = self.parse_line(line)
                     [self.data.append(i) for i in sequences]
-                    bp_count += len(sequences)
 
     def parse_line(self, line: str) -> list[list[int]]:
-        line = line.strip()[1:-1]
-        # Remove leading/trailing whitespace and split by '],'
-        vectors = line.strip().split("],")
-        # Process each vector
-        sequence = []
-        for vector in vectors:
-            # Clean up the vector string and convert to integers
-            cleaned_vector = vector.strip("[] \n").split(",")
-            # Filter out empty strings and convert the rest to integers
-            int_vector = [int(x) for x in cleaned_vector if x.strip()]
+        return [self.process_vector(vector) for vector in line.strip("\n").split("\t")]
 
-            if self.testing_data:
-                int_vector = int_vector[
-                    :-1
-                ]  # Remove the last element if testing_data is True
+    def process_vector(self, vector: str) -> list[int]:
+        processed_vector = [int(element) for element in ast.literal_eval(vector)]
 
-            sequence.append(int_vector)
-        return sequence
+        # Check if padding is needed
+        if len(processed_vector) < self.d_model:
+            # Calculate the number of padding elements needed
+            padding_size = self.d_model - len(processed_vector)
+
+            # Pad the vector with zeros
+            processed_vector.extend([0] * padding_size)
+        return processed_vector

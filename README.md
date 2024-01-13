@@ -1,9 +1,8 @@
 # Zezima: Gene Prediction with Transformer Model
 
 ## Overview
-Zezima is a sophisticated gene prediction tool that leverages the power of Transformer models 
-to analyze DNA sequences. It's designed to efficiently predict gene-related 
-features within DNA sequences, aiding in the complex task of genomic analysis.
+Zezima is a sophisticated gene prediction tool that leverages the power of Transformer models to analyze DNA sequences. <br>
+It's designed to efficiently predict gene-related features within DNA sequences, aiding in the complex task of genomic analysis.
 
 ## Key Features
 - **Transformer Model**: Utilizes an advanced machine learning approach for accurate gene prediction.
@@ -35,7 +34,7 @@ Follow these steps to create and activate your virtual environment:
    ```bash
    pip3 install -Ur requirements.txt
    ```
-   
+
 ## Data Format
 The input data should be structured as follows:
 ```
@@ -50,7 +49,7 @@ The input data should be structured as follows:
 
 
 ## Usage
-1. Prepare your DNA sequence data files according to the specified format and 
+1. Prepare your DNA sequence data files according to the specified format and
 place them in the designated input directory.
 2. Configure the model and execution parameters in the `config.py` file.
 3. Run the application:
@@ -60,5 +59,5 @@ place them in the designated input directory.
    ```
 
 ## License
-Zezima is open-source software licensed under the MIT License. 
+Zezima is open-source software licensed under the MIT License.
 For more details, see the `LICENSE` file.

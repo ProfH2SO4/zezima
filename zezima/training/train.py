@@ -1,10 +1,19 @@
 import torch
+from torch import Tensor
 
 from zezima import log
+from zezima.models import TransformerModel
+from torch.utils.data import DataLoader
 
 
 def train_model(
-    model, criterion, optimizer, data_loader, state_matrix, num_epochs, model_path: str
+    model: TransformerModel,
+    criterion,
+    optimizer,
+    data_loader: DataLoader,
+    state_matrix: Tensor,
+    num_epochs: int,
+    model_path: str,
 ):
 
     for epoch in range(num_epochs):

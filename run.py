@@ -65,7 +65,7 @@ def create_file_if_not_exists(path_to_file: str) -> None:
 
 
 def setup_model_data_loader(file, parsed_config):
-    dataset = LimitedDataset(file)
+    dataset = LimitedDataset(file, d_model=parsed_config["D_MODEL"])
     data_loader = DataLoader(
         dataset,
         batch_size=1,
@@ -73,7 +73,7 @@ def setup_model_data_loader(file, parsed_config):
         num_workers=parsed_config["NUM_OF_WORKERS"],
     )
     model = TransformerModel(
-        input_size=parsed_config["INPUT_SIZE"],
+        input_size=parsed_config["D_MODEL"],
         d_model=parsed_config["D_MODEL"],
         nhead=parsed_config["NHEAD"],
         num_encoder_layers=parsed_config["NUM_ENCODER_LAYERS"],
@@ -134,6 +134,7 @@ def main() -> None:
 
         log.info(f"Processed {file}")
     log.info("Done")
+    print("Done")
 
 
 if __name__ == "__main__":

@@ -9,13 +9,13 @@ NUM_OF_WORKERS = 0
 
 # Optimizer
 LEARNING_RATE = 0.01
-INPUT_SIZE = 10
-D_MODEL = 10  # also represent a features
+
+# Model
+D_MODEL = 32
 NHEAD = 1
 NUM_ENCODER_LAYERS = 1
 DIM_FEEDFORWARD = 1
 SEQUENCE_LENGTH = 2
-
 NUM_EPOCHS = 5
 
 
