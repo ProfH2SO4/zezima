@@ -1,6 +1,6 @@
 #HEADER#
-#DATE: 2024-01-08
-#pre_processing_version = [0.1.0]
+#DATE=2024-01-14T16:35:29.982692
+#pre_processing_version=[0, 1, 0]
 #bp_vector_schema=['A', 'C', 'G', 'T', 'PROMOTOR_MOTIF', 'ORF', 'exon', 'mRNA', 'miRNA', 'rRNA', 'CDS', 'POLY_ADENYL', 'gene']
 #description of feature:[0, 0, 0]=no_present, [1, 0, 0]=start, [0, 1, 0]=continuation/ongoing, [0, 0, 1]=end
 #max_feature_overlap=1
