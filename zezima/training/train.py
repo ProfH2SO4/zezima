@@ -1,3 +1,4 @@
+import time
 import torch
 from torch import Tensor
 
@@ -15,6 +16,7 @@ def train_model(
     num_epochs: int,
     model_path: str,
 ):
+    start_time = time.time()
 
     for epoch in range(num_epochs):
         model.train()
@@ -39,8 +41,15 @@ def train_model(
             loss.backward()
             optimizer.step()
 
-        log.debug(
-            f"Epoch {epoch + 1}/{num_epochs}, Loss: {total_loss / len(data_loader)}"
-        )
+            if (batch_idx + 1) % 100 == 0:
+                log.debug(
+                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, Batch Loss: {loss.item()}"
+                )
+
+        average_loss = total_loss / len(data_loader)
+        log.debug(f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {average_loss}")
+
+    total_runtime = time.time() - start_time
+    log.info(f"Total Inference Time: {total_runtime} seconds")
 
     torch.save(model.state_dict(), model_path)

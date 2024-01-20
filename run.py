@@ -53,22 +53,24 @@ def parse_namespace(config_: ModuleType) -> dict[str, any]:
 
 
 def create_file_if_not_exists(path_to_file: str) -> None:
-    # Check if the directory exists, and create it if it doesn't
     directory = os.path.dirname(path_to_file)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # Check if the file exists, and create it if it doesn't
     if not os.path.exists(path_to_file):
         with open(path_to_file, "w") as file:
             pass  # Create an empty file
 
 
 def setup_model_data_loader(file, parsed_config):
-    dataset = LimitedDataset(file, d_model=parsed_config["D_MODEL"])
+    dataset = LimitedDataset(
+        file,
+        bp_per_batch=parsed_config["SEQUENCE_LENGTH"],
+        d_model=parsed_config["D_MODEL"],
+    )
     data_loader = DataLoader(
         dataset,
-        batch_size=1,
+        batch_size=parsed_config["BATCH_SIZE"],
         shuffle=False,
         num_workers=parsed_config["NUM_OF_WORKERS"],
     )
@@ -99,18 +101,27 @@ def main() -> None:
         create_file_if_not_exists(file_path)
     log.set_up_logger(config_.LOG_CONFIG)
 
-    directory: str = parsed_config["INPUT_DIRECTORY"]
-    files: list[str] = [
-        os.path.join(directory, f) for f in os.listdir(directory) if f.endswith(".txt")
+    train_directory: str = parsed_config["INPUT_TRAIN_DIRECTORY"]
+    test_directory: str = parsed_config["INPUT_TEST_DIRECTORY"]
+
+    train_files: list[str] = [
+        os.path.join(train_directory, f)
+        for f in os.listdir(train_directory)
+        if f.endswith(".txt")
+    ]
+    test_files: list[str] = [
+        os.path.join(test_directory, f)
+        for f in os.listdir(test_directory)
+        if f.endswith(".txt")
     ]
 
-    for file in files:
+    for file in train_files:
         model, data_loader, criterion, state_matrix = setup_model_data_loader(
             file, parsed_config
         )
 
         if TRAIN_MODE:
-            log.debug(f"Training model on {file}")
+            log.info(f"Training model on {file}")
             optimizer = optim.Adam(model.parameters())
             train_model(
                 model,
@@ -123,12 +134,15 @@ def main() -> None:
             )
 
         if VALIDATE_MODE:
-            log.debug(f"Validating model on {file}")
+            log.info(f"Validating model on {file}")
             model.load_state_dict(torch.load(parsed_config["MODEL_PATH"]))
             validate_model(model, criterion, data_loader, state_matrix)
-
-        if TEST_MODE:
-            log.debug(f"Testing model on {file}")
+    if TEST_MODE:
+        for file in test_files:
+            log.info(f"Testing model on {file}")
+            model, data_loader, criterion, state_matrix = setup_model_data_loader(
+                file, parsed_config
+            )
             model.load_state_dict(torch.load(parsed_config["MODEL_PATH"]))
             test_model(model, criterion, data_loader, state_matrix)
 

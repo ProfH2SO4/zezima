@@ -7,12 +7,12 @@ from torch.nn import TransformerEncoder, TransformerEncoderLayer
 class TransformerModel(nn.Module):
     def __init__(
         self,
-        input_size,
-        d_model,
-        nhead,
-        num_encoder_layers,
-        dim_feedforward,
-        seq_length,
+        input_size: int,
+        d_model: int,
+        nhead: int,
+        num_encoder_layers: int,
+        dim_feedforward: int,
+        seq_length: int,
         dropout=0.1,
     ):
         super(TransformerModel, self).__init__()
@@ -25,7 +25,7 @@ class TransformerModel(nn.Module):
         )
         self.encoder = nn.Linear(input_size, d_model)
         self.d_model = d_model
-        self.decoder = nn.Linear(d_model, 3)
+        self.decoder = nn.Linear(d_model, 4)
 
     def forward(self, src, state_matrix):
         src = self.pos_encoder(src)

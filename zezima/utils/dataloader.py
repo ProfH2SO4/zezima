@@ -13,12 +13,16 @@ def read_boundary_line(
     :param sequence: Sequence of vectors. Each vector represents bp with features.
     :param positions_to_look: Tuple indicating the boundary positions in the sequence to look for gene features.
     :return: The boundary status of the gene.
-    [1, 0, 0] = no gene_start or gene_end
-    [0, 1, 0] = gene_start
-    [0, 0, 1] = gene_end
+    [1, 0, 0, 0] = no gene
+    [0, 1, 0, 0] = gene_start
+    [0, 0, 1, 0] = ongoing/middle
+    [0, 0, 0, 1] = gene_end
     """
     start_pos, end_pos = positions_to_look
     boundary_status = sequence[start_pos:end_pos]
+    boundary_status = [0] + boundary_status
+    if sum(boundary_status) == 0:
+        boundary_status[0] = 1
     return boundary_status
 
 
