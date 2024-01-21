@@ -114,15 +114,26 @@ def main() -> None:
         for f in os.listdir(test_directory)
         if f.endswith(".txt")
     ]
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        log.info(f"CUDA is available. Using {device}.")
+        print(f"CUDA is available. Using {device}.")
+    else:
+        log.info(f"CUDA is not available. Using {device}.")
+        print(f"CUDA is not available. Using {device}.")
 
     for file in train_files:
         model, data_loader, criterion, state_matrix = setup_model_data_loader(
             file, parsed_config
         )
-
+        model.to(device)
+        state_matrix = state_matrix.to(device)
+        model.double()
         if TRAIN_MODE:
             log.info(f"Training model on {file}")
-            optimizer = optim.Adam(model.parameters())
+            optimizer = optim.Adam(
+                model.parameters(), lr=parsed_config["LEARNING_RATE"]
+            )
             train_model(
                 model,
                 criterion,
@@ -131,6 +142,7 @@ def main() -> None:
                 state_matrix,
                 parsed_config["NUM_EPOCHS"],
                 parsed_config["MODEL_PATH"],
+                device,
             )
 
         if VALIDATE_MODE:

@@ -1,23 +1,23 @@
-INPUT_TRAIN_DIRECTORY = "./data/fake_train_data"
+INPUT_TRAIN_DIRECTORY = "./data/train_data"
 INPUT_TEST_DIRECTORY = "./data/fake_test_data"
 MODEL_PATH = "./saved_models/model_state.pth"
 
 TRAIN_MODE = True
 VALIDATE_MODE = False
-TEST_MODE = True
+TEST_MODE = False
 BATCH_SIZE = 1  # for now keep 1
 NUM_OF_WORKERS = 0
 
 # Optimizer
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.1
 
 # Model
 D_MODEL = 32
 NHEAD = 1
 NUM_ENCODER_LAYERS = 1
 DIM_FEEDFORWARD = 1
-SEQUENCE_LENGTH = 4
-NUM_EPOCHS = 5
+SEQUENCE_LENGTH = 1000
+NUM_EPOCHS = 50
 
 
 LOG_CONFIG = {

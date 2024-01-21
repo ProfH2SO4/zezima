@@ -1,6 +1,7 @@
 import math
 import torch
 import torch.nn as nn
+import torch.nn.init as init
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
 
 
@@ -26,6 +27,16 @@ class TransformerModel(nn.Module):
         self.encoder = nn.Linear(input_size, d_model)
         self.d_model = d_model
         self.decoder = nn.Linear(d_model, 4)
+
+        # Apply He initialization to linear layers
+        self.init_weights()
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                init.kaiming_normal_(m.weight, mode="fan_in", nonlinearity="relu")
+                if m.bias is not None:
+                    init.constant_(m.bias, 0)
 
     def forward(self, src, state_matrix):
         src = self.pos_encoder(src)

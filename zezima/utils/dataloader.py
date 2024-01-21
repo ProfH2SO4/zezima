@@ -72,10 +72,8 @@ class LimitedDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx: int):
-        # Calculate the end index of the batch
         end_idx = min(idx + self.bp_per_batch, len(self.data))
 
-        # Check if the index is within bounds
         if idx >= len(self.data):
             raise IndexError("Index out of bounds")
 
@@ -83,15 +81,14 @@ class LimitedDataset(Dataset):
         targets_sequence: list[list[int]] = [
             read_boundary_line(i, self.positions_to_look) for i in inputs_sequence
         ]
-
-        return torch.tensor(inputs_sequence, dtype=torch.float32), torch.tensor(
-            targets_sequence, dtype=torch.float32
+        return torch.tensor(inputs_sequence, dtype=torch.float64), torch.tensor(
+            targets_sequence, dtype=torch.float64
         )
 
     def convert_vector_to_torch(self, vector):
         # Process each element in the vector. If an element is a list, convert it to a tensor
         return [
-            torch.tensor(sub_vector, dtype=torch.float32)
+            torch.tensor(sub_vector, dtype=torch.float64)
             if isinstance(sub_vector, list)
             else sub_vector
             for sub_vector in vector

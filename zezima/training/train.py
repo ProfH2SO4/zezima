@@ -1,5 +1,6 @@
 import time
 import torch
+import torch.nn.utils as torch_utils
 from torch import Tensor
 
 from zezima import log
@@ -15,6 +16,8 @@ def train_model(
     state_matrix: Tensor,
     num_epochs: int,
     model_path: str,
+    device,
+    max_grad_norm: float = 1.0,
 ):
     start_time = time.time()
 
@@ -30,6 +33,7 @@ def train_model(
             if state_matrix.shape[1] != seq_len:
                 state_matrix = state_matrix[:, :seq_len, :]
             inputs, targets = batch
+            inputs, targets = inputs.to(device), targets.to(device)
             optimizer.zero_grad()
             output, output_state_matrix = model(inputs, state_matrix.detach())
             state_matrix = output_state_matrix
@@ -39,11 +43,21 @@ def train_model(
 
             # Backward pass and optimize
             loss.backward()
+
+            torch_utils.clip_grad_norm_(model.parameters(), max_grad_norm)
             optimizer.step()
 
+            if torch.isnan(loss).any():
+                print("Loss is NaN")
+            formatted_loss = f"{loss.item():.5f}"
+
             if (batch_idx + 1) % 100 == 0:
+                for name, param in model.named_parameters():
+                    if param.requires_grad:
+                        # Log the gradient; you can use any logging method here
+                        log.debug(f"Gradient of {name}: {param.grad}")
                 log.debug(
-                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, Batch Loss: {loss.item()}"
+                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, Batch Loss: {formatted_loss}"
                 )
 
         average_loss = total_loss / len(data_loader)
