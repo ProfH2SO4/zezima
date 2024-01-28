@@ -37,8 +37,12 @@ def train_model(
             optimizer.zero_grad()
             output, output_state_matrix = model(inputs, state_matrix.detach())
             state_matrix = output_state_matrix
+
+            _, targets_indices = targets.max(dim=-1)
+            output_indices = output.view(-1, 4)
+            targets_indices = targets_indices.view(-1)
             # Compute loss
-            loss = criterion(output, targets)
+            loss = criterion(output_indices, targets_indices)
             total_loss += loss.item()
 
             # Backward pass and optimize
@@ -52,10 +56,10 @@ def train_model(
             formatted_loss = f"{loss.item():.5f}"
 
             if (batch_idx + 1) % 100 == 0:
-                for name, param in model.named_parameters():
-                    if param.requires_grad:
-                        # Log the gradient; you can use any logging method here
-                        log.debug(f"Gradient of {name}: {param.grad}")
+                # for name, param in model.named_parameters():
+                #     if param.requires_grad:
+                #         # Log the gradient; you can use any logging method here
+                #         log.debug(f"Gradient of {name}: {param.grad}")
                 log.debug(
                     f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, Batch Loss: {formatted_loss}"
                 )

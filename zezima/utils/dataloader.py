@@ -1,4 +1,5 @@
 import ast
+import math
 import torch
 from torch.utils.data import Dataset
 
@@ -69,7 +70,7 @@ class LimitedDataset(Dataset):
         self.read_data()
 
     def __len__(self):
-        return len(self.data)
+        return math.ceil(len(self.data) / self.bp_per_batch)
 
     def __getitem__(self, idx: int):
         end_idx = min(idx + self.bp_per_batch, len(self.data))
