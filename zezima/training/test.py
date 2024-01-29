@@ -1,11 +1,20 @@
 import time
 import torch
+import torch.nn as nn
+from torch import device
+from torch.utils.data import DataLoader
 from sklearn.metrics import precision_score, recall_score, f1_score, confusion_matrix
 
 from zezima import log
+from zezima.models.my_model import TransformerModel
 
 
-def validate_model(model, criterion, data_loader, state_matrix) -> None:
+def validate_model(
+    model: TransformerModel,
+    criterion: nn.CrossEntropyLoss,
+    data_loader: DataLoader,
+    state_matrix: torch.Tensor,
+) -> None:
     model.eval()  # Set the model to evaluation mode
 
     total_loss: int = 0
@@ -54,7 +63,13 @@ def validate_model(model, criterion, data_loader, state_matrix) -> None:
     log.info(f"F1 Score: {f1}")
 
 
-def test_model(model, criterion, data_loader, state_matrix):
+def test_model(
+    model: TransformerModel,
+    criterion: nn.CrossEntropyLoss,
+    data_loader: DataLoader,
+    state_matrix: torch.Tensor,
+    target_device: device,
+) -> None:
     model.eval()  # Set the model to evaluation mode
 
     total_loss: int = 0
@@ -72,13 +87,19 @@ def test_model(model, criterion, data_loader, state_matrix):
             if state_matrix.shape[1] != seq_len:
                 state_matrix = state_matrix[:, :seq_len, :]
             inputs, targets = batch
-            output, _ = model(inputs, state_matrix.detach())
-            loss = criterion(output, targets)
+            inputs, targets = inputs.to(target_device), targets.to(target_device)
+            output, output_state_matrix = model(inputs, state_matrix.detach())
+            state_matrix = output_state_matrix
+
+            _, targets_indices = targets.max(dim=-1)
+            output_indices = output.view(-1, 4)
+            targets_indices = targets_indices.view(-1)
+            # Compute loss
+            loss = criterion(output_indices, targets_indices)
             total_loss += loss.item()
 
-            softmaxed_output = torch.softmax(output, dim=-1)
-            predicted_classes = torch.argmax(softmaxed_output, dim=-1).view(-1).tolist()
-            true_classes = torch.argmax(targets, dim=-1).view(-1).tolist()
+            predicted_classes: list[int] = output_indices.argmax(dim=-1).tolist()
+            true_classes: list[int] = targets_indices.tolist()
 
             all_predictions.extend(predicted_classes)
             all_true_labels.extend(true_classes)

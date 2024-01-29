@@ -1,11 +1,12 @@
 from types import ModuleType
 from os.path import isfile
-import os, random
+import os
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch import device
 
 from zezima.utils.dataloader import LimitedDataset
 from zezima.models.my_model import TransformerModel
@@ -62,7 +63,9 @@ def create_file_if_not_exists(path_to_file: str) -> None:
             pass  # Create an empty file
 
 
-def setup_model_data_loader(file, parsed_config):
+def setup_model_data_loader(
+    file: str, parsed_config: dict
+) -> tuple[TransformerModel, DataLoader, nn.CrossEntropyLoss, torch.Tensor]:
     dataset = LimitedDataset(
         file,
         bp_per_batch=parsed_config["SEQUENCE_LENGTH"],
@@ -91,6 +94,37 @@ def setup_model_data_loader(file, parsed_config):
     return model, data_loader, criterion, state_matrix
 
 
+def prepare_model_and_state(
+    model: TransformerModel,
+    state_matrix: torch.Tensor,
+    target_device: device,
+    dtype=torch.float64,
+):
+    """
+        Moves the model and state matrix to the specified device and sets the model's dtype.
+
+        Parameters:
+    - model (torch.nn.Module): The PyTorch model to be prepared.
+        - state_matrix (torch.Tensor): The state matrix to be moved to the device.
+        - target_device (device): The device to move the model and state matrix to. Defaults to 'cuda'.
+        - dtype (torch.dtype, optional): The data type to set for the model's parameters. Defaults to torch.float64 (double).
+
+        Returns:
+        - model (torch.nn.Module): The model moved to the specified device and converted to the specified dtype.
+        - state_matrix (torch.Tensor): The state matrix moved to the specified device.
+    """
+    # Move the model to the specified device
+    model = model.to(target_device)
+
+    # Convert the model's parameters to the specified dtype
+    model = model.type(dtype)
+
+    # Move the state matrix to the specified device
+    state_matrix = state_matrix.to(target_device)
+
+    return model, state_matrix
+
+
 def main() -> None:
     config_: ModuleType = load_config()
     parsed_config: dict[str, any] = parse_namespace(config_)
@@ -114,21 +148,22 @@ def main() -> None:
         for f in os.listdir(test_directory)
         if f.endswith(".txt")
     ]
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    target_device: device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
-        log.info(f"CUDA is available. Using {device}.")
-        print(f"CUDA is available. Using {device}.")
+        log.info(f"CUDA is available. Using {target_device}.")
+        print(f"CUDA is available. Using {target_device}.")
     else:
-        log.info(f"CUDA is not available. Using {device}.")
-        print(f"CUDA is not available. Using {device}.")
+        log.info(f"CUDA is not available. Using {target_device}.")
+        print(f"CUDA is not available. Using {target_device}.")
 
     for file in train_files:
         model, data_loader, criterion, state_matrix = setup_model_data_loader(
             file, parsed_config
         )
-        model.to(device)
-        state_matrix = state_matrix.to(device)
-        model.double()
+
+        model, state_matrix = prepare_model_and_state(
+            model, state_matrix, target_device, dtype=torch.float64
+        )
         if TRAIN_MODE:
             log.info(f"Training model on {file}")
             optimizer = optim.Adam(
@@ -142,7 +177,7 @@ def main() -> None:
                 state_matrix,
                 parsed_config["NUM_EPOCHS"],
                 parsed_config["MODEL_PATH"],
-                device,
+                target_device,
             )
 
         if VALIDATE_MODE:
@@ -155,8 +190,12 @@ def main() -> None:
             model, data_loader, criterion, state_matrix = setup_model_data_loader(
                 file, parsed_config
             )
+
             model.load_state_dict(torch.load(parsed_config["MODEL_PATH"]))
-            test_model(model, criterion, data_loader, state_matrix)
+            model, state_matrix = prepare_model_and_state(
+                model, state_matrix, target_device, dtype=torch.float64
+            )
+            test_model(model, criterion, data_loader, state_matrix, target_device)
 
         log.info(f"Processed {file}")
     log.info("Done")

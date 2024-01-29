@@ -51,8 +51,6 @@ def train_model(
             torch_utils.clip_grad_norm_(model.parameters(), max_grad_norm)
             optimizer.step()
 
-            if torch.isnan(loss).any():
-                print("Loss is NaN")
             formatted_loss = f"{loss.item():.5f}"
 
             if (batch_idx + 1) % 100 == 0:
