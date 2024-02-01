@@ -1,27 +1,70 @@
 import time
 import torch
+import torch.nn as nn
 import torch.nn.utils as torch_utils
-from torch import Tensor
+import torch.optim as optim
+from torch import Tensor, device
+from torch.utils.data import DataLoader
 
 from zezima import log
 from zezima.models import TransformerModel
-from torch.utils.data import DataLoader
+
+
+def save_checkpoint(
+    model: TransformerModel,
+    optimizer: optim.Adam,
+    loss,
+    epoch: int,
+    path_to_checkpoint: str,
+) -> None:
+    torch.save(
+        {
+            "epoch": epoch,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "loss": loss,
+        },
+        path_to_checkpoint,
+    )
+
+
+def laod_checkpoint_file(path_to_checkpoint: str) -> dict | None:
+    checkpoint: dict | None = None
+    try:
+        checkpoint: dict = torch.load(path_to_checkpoint)
+        log.info("checkpoint found")
+    except FileNotFoundError as e:
+        log.info("NO checkpoint found")
+    return checkpoint
+
+
+def restore_checkpoint(checkpoint, model: TransformerModel, optimizer: optim.Adam):
+    model.load_state_dict(checkpoint["model_state_dict"])
+    optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+    epoch = checkpoint.get("epoch", 0)  # Default to 0 if not found
+    return epoch  # Return epoch and loss to use outside
 
 
 def train_model(
     model: TransformerModel,
-    criterion,
-    optimizer,
+    criterion: nn.CrossEntropyLoss,
+    optimizer: optim.Adam,
     data_loader: DataLoader,
     state_matrix: Tensor,
     num_epochs: int,
     model_path: str,
-    device,
+    target_device: device,
+    path_to_checkpoint: str,
     max_grad_norm: float = 1.0,
 ):
     start_time = time.time()
 
-    for epoch in range(num_epochs):
+    start_epoch: int = 0
+    checkpoint: dict | None = laod_checkpoint_file(path_to_checkpoint)
+    if checkpoint:
+        start_epoch = restore_checkpoint(checkpoint, model, optimizer)
+
+    for epoch in range(start_epoch, num_epochs):
         model.train()
         total_loss = 0
 
@@ -33,7 +76,7 @@ def train_model(
             if state_matrix.shape[1] != seq_len:
                 state_matrix = state_matrix[:, :seq_len, :]
             inputs, targets = batch
-            inputs, targets = inputs.to(device), targets.to(device)
+            inputs, targets = inputs.to(target_device), targets.to(target_device)
             optimizer.zero_grad()
             output, output_state_matrix = model(inputs, state_matrix.detach())
             state_matrix = output_state_matrix
@@ -61,7 +104,7 @@ def train_model(
                 log.debug(
                     f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, Batch Loss: {formatted_loss}"
                 )
-
+        save_checkpoint(model, optimizer, loss, epoch, path_to_checkpoint)
         average_loss = total_loss / len(data_loader)
         log.debug(f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {average_loss}")
 

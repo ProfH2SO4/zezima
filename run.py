@@ -20,6 +20,17 @@ from zezima.training.test import test_model, validate_model
 from zezima import log
 
 
+def get_device() -> device:
+    target_device: device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.cuda.is_available():
+        log.info(f"CUDA is available. Using {target_device}.")
+        print(f"CUDA is available. Using {target_device}.")
+    else:
+        log.info(f"CUDA is not available. Using {target_device}.")
+        print(f"CUDA is not available. Using {target_device}.")
+    return target_device
+
+
 def load_config() -> ModuleType:
     """
     Load local config.py.
@@ -148,16 +159,9 @@ def main() -> None:
         for f in os.listdir(test_directory)
         if f.endswith(".txt")
     ]
-    target_device: device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if torch.cuda.is_available():
-        log.info(f"CUDA is available. Using {target_device}.")
-        print(f"CUDA is available. Using {target_device}.")
-    else:
-        log.info(f"CUDA is not available. Using {target_device}.")
-        print(f"CUDA is not available. Using {target_device}.")
-
+    target_device: device = get_device()
     for file in train_files:
-        model, data_loader, criterion, state_matrix = setup_model_data_loader(
+        model, data_loader, loss_function, state_matrix = setup_model_data_loader(
             file, parsed_config
         )
 
@@ -171,23 +175,24 @@ def main() -> None:
             )
             train_model(
                 model,
-                criterion,
+                loss_function,
                 optimizer,
                 data_loader,
                 state_matrix,
                 parsed_config["NUM_EPOCHS"],
                 parsed_config["MODEL_PATH"],
                 target_device,
+                parsed_config["CHECKPOINT_PATH"],
             )
 
         if VALIDATE_MODE:
             log.info(f"Validating model on {file}")
             model.load_state_dict(torch.load(parsed_config["MODEL_PATH"]))
-            validate_model(model, criterion, data_loader, state_matrix)
+            validate_model(model, loss_function, data_loader, state_matrix)
     if TEST_MODE:
         for file in test_files:
             log.info(f"Testing model on {file}")
-            model, data_loader, criterion, state_matrix = setup_model_data_loader(
+            model, data_loader, loss_function, state_matrix = setup_model_data_loader(
                 file, parsed_config
             )
 
@@ -195,7 +200,7 @@ def main() -> None:
             model, state_matrix = prepare_model_and_state(
                 model, state_matrix, target_device, dtype=torch.float64
             )
-            test_model(model, criterion, data_loader, state_matrix, target_device)
+            test_model(model, loss_function, data_loader, state_matrix, target_device)
 
         log.info(f"Processed {file}")
     log.info("Done")

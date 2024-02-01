@@ -1,6 +1,7 @@
 INPUT_TRAIN_DIRECTORY = "./data/fake_train_data"
 INPUT_TEST_DIRECTORY = "./data/fake_test_data"
 MODEL_PATH = "./saved_models/model_state.pth"
+CHECKPOINT_PATH = "./saved_models/model_checkpoint.pth"
 
 TRAIN_MODE = True
 VALIDATE_MODE = False
