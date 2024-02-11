@@ -22,6 +22,7 @@ def validate_model(
     all_true_labels: list[int] = []
     # Evaluation loop
     with torch.no_grad():  # No need to track gradients for testing
+        data_loader.dataset.reset_window()
         for batch_idx, batch in enumerate(data_loader):
             inputs: torch.Tensor
             targets: torch.Tensor
@@ -78,6 +79,7 @@ def test_model(
 
     # Evaluation loop
     with torch.no_grad():  # No need to track gradients for testing
+        data_loader.dataset.reset_window()
         for batch_idx, batch in enumerate(data_loader):
             inputs: torch.Tensor
             targets: torch.Tensor
