@@ -68,20 +68,24 @@ class LimitedDataset(Dataset):
         self.bp_vector_schema = []
         self.data = []
         self.read_data()
+        self.pad_data()
+        self.st_window = 0
+        self.ed_window = self.bp_per_batch
 
     def __len__(self):
         return math.ceil(len(self.data) / self.bp_per_batch)
 
     def __getitem__(self, idx: int):
-        end_idx = min(idx + self.bp_per_batch, len(self.data))
 
-        if idx >= len(self.data):
+        if self.ed_window > len(self.data):
             raise IndexError("Index out of bounds")
 
-        inputs_sequence: list[list[int]] = [self.data[i] for i in range(idx, end_idx)]
+        inputs_sequence: list[list[int]] = [self.data[i] for i in range(self.st_window, self.ed_window)]
         targets_sequence: list[list[int]] = [
             read_boundary_line(i, self.positions_to_look) for i in inputs_sequence
         ]
+        self.st_window = self.ed_window
+        self.ed_window += self.bp_per_batch
         return torch.tensor(inputs_sequence, dtype=torch.float64), torch.tensor(
             targets_sequence, dtype=torch.float64
         )
@@ -138,3 +142,12 @@ class LimitedDataset(Dataset):
             # Pad the vector with zeros
             processed_vector.extend([0] * padding_size)
         return processed_vector
+
+    def pad_data(self) -> None:
+        reminder: int = len(self.data) % self.bp_per_batch
+        for i in range(reminder):
+            self.data.append(self.data[len(self.data) - 1])
+
+    def reset_window(self) -> None:
+        self.st_window = 0
+        self.ed_window = self.bp_per_batch

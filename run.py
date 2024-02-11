@@ -202,7 +202,7 @@ def main() -> None:
             )
             test_model(model, loss_function, data_loader, state_matrix, target_device)
 
-        log.info(f"Processed {file}")
+            log.info(f"Processed {file}")
     log.info("Done")
     print("Done")
 

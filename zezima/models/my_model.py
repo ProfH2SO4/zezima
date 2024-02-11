@@ -63,29 +63,16 @@ class PositionalEncoding(nn.Module):
         div_term = torch.exp(
             torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
         )
-        pe = torch.zeros(max_len, 1, d_model)
-        pe[:, 0, 0::2] = torch.sin(position * div_term)
-        pe[:, 0, 1::2] = torch.cos(position * div_term)
+        pe = torch.zeros(max_len, d_model)
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
         self.register_buffer("pe", pe)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
         batch_size, seq_len, d_model = x.shape
-
-        # Reshape x for positional encoding addition
-        x_expanded = x.view(-1, d_model).unsqueeze(
-            1
-        )  # Reshape to (batch_size * seq_len, 1, d_model)
-
-        # Extract and expand positional encodings based on the sequence length of x
-        pe = self.pe[:seq_len, :].expand_as(x_expanded)
-
-        # Add positional encoding to x_expanded
-        x_expanded = x_expanded + pe
-
+        pe = self.pe[:x.size(1), :]
+        # Add positional encoding to x
+        x = x + pe
         # Apply dropout
-        x_expanded = self.dropout(x_expanded)
-
-        # Reshape back to original x shape
-        x = x_expanded.view(batch_size, seq_len, d_model)
-
+        x = self.dropout(x)
         return x

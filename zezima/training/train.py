@@ -9,6 +9,8 @@ from torch.utils.data import DataLoader
 from zezima import log
 from zezima.models import TransformerModel
 
+from zezima.common import create_file_if_not_exists
+
 
 def save_checkpoint(
     model: TransformerModel,
@@ -17,6 +19,7 @@ def save_checkpoint(
     epoch: int,
     path_to_checkpoint: str,
 ) -> None:
+    create_file_if_not_exists(path_to_checkpoint)
     torch.save(
         {
             "epoch": epoch,
@@ -28,7 +31,7 @@ def save_checkpoint(
     )
 
 
-def laod_checkpoint_file(path_to_checkpoint: str) -> dict | None:
+def load_checkpoint_file(path_to_checkpoint: str) -> dict | None:
     checkpoint: dict | None = None
     try:
         checkpoint: dict = torch.load(path_to_checkpoint)
@@ -60,22 +63,20 @@ def train_model(
     start_time = time.time()
 
     start_epoch: int = 0
-    checkpoint: dict | None = laod_checkpoint_file(path_to_checkpoint)
+    checkpoint: dict | None = load_checkpoint_file(path_to_checkpoint)
     if checkpoint:
         start_epoch = restore_checkpoint(checkpoint, model, optimizer)
 
     for epoch in range(start_epoch, num_epochs):
         model.train()
         total_loss = 0
-
+        data_loader.dataset.reset_window()
         for batch_idx, batch in enumerate(data_loader):
-            src, _ = batch
-            batch_size, seq_len, _ = src.shape
-
-            # Reshape or slice the state_matrix to match the src dimensions
-            if state_matrix.shape[1] != seq_len:
-                state_matrix = state_matrix[:, :seq_len, :]
+            inputs: torch.Tensor
+            targets: torch.Tensor
             inputs, targets = batch
+            batch_size, seq_len, _ = inputs.shape
+
             inputs, targets = inputs.to(target_device), targets.to(target_device)
             optimizer.zero_grad()
             output, output_state_matrix = model(inputs, state_matrix.detach())
@@ -104,7 +105,8 @@ def train_model(
                 log.debug(
                     f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, Batch Loss: {formatted_loss}"
                 )
-        save_checkpoint(model, optimizer, loss, epoch, path_to_checkpoint)
+
+        save_checkpoint(model, optimizer, total_loss, epoch, path_to_checkpoint)
         average_loss = total_loss / len(data_loader)
         log.debug(f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {average_loss}")
 
