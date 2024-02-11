@@ -23,12 +23,11 @@ def validate_model(
     # Evaluation loop
     with torch.no_grad():  # No need to track gradients for testing
         for batch_idx, batch in enumerate(data_loader):
-            src, _ = batch
-            batch_size, seq_len, _ = src.shape
+            inputs: torch.Tensor
+            targets: torch.Tensor
+            inputs, targets = batch
+            batch_size, seq_len, _ = inputs.shape
 
-            # Reshape or slice the state_matrix to match the src dimensions
-            if state_matrix.shape[1] != seq_len:
-                state_matrix = state_matrix[:, :seq_len, :]
             inputs, targets = batch
             output, _ = model(inputs, state_matrix.detach())
 
@@ -80,13 +79,11 @@ def test_model(
     # Evaluation loop
     with torch.no_grad():  # No need to track gradients for testing
         for batch_idx, batch in enumerate(data_loader):
-            src, _ = batch
-            batch_size, seq_len, _ = src.shape
-
-            # Reshape or slice the state_matrix to match the src dimensions
-            if state_matrix.shape[1] != seq_len:
-                state_matrix = state_matrix[:, :seq_len, :]
+            inputs: torch.Tensor
+            targets: torch.Tensor
             inputs, targets = batch
+            batch_size, seq_len, _ = inputs.shape
+
             inputs, targets = inputs.to(target_device), targets.to(target_device)
             output, output_state_matrix = model(inputs, state_matrix.detach())
             state_matrix = output_state_matrix
