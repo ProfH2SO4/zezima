@@ -1,7 +1,13 @@
 import ast
 import math
 import torch
+import os
+import multiprocessing
+
+from multiprocessing import Pool, Manager
 from torch.utils.data import Dataset
+
+from zezima import log
 
 MAXIMAL_BP_PER_BATCH = 100000
 
@@ -47,11 +53,85 @@ def calculate_feature_boundary(
     return start_index, end_index
 
 
+def estimate_line_count(file_path, sample_size=1024 * 1024):
+    with open(file_path, "r") as file:
+        sample = file.read(sample_size)
+        estimated_lines = sample.count("\n")
+        return os.path.getsize(file_path) // (len(sample) // estimated_lines)
+
+
+def parse_line(line: str, d_model: int) -> list[list[int]]:
+    return [process_vector(vector, d_model) for vector in line.strip("\n").split("\t")]
+
+
+def process_vector(vector: str, d_model: int) -> list[int]:
+    processed_vector = [int(element) for element in ast.literal_eval(vector)]
+
+    # Check if padding is needed
+    if len(processed_vector) < d_model:
+        # Calculate the number of padding elements needed
+        padding_size = d_model - len(processed_vector)
+
+        # Pad the vector with zeros
+        processed_vector.extend([0] * padding_size)
+    return processed_vector
+
+
+def process_file_section(args):
+    file_path, start_line, end_line, shared_list, index, d_model = args
+    local_data = []
+    with open(file_path, "r", encoding="utf-8") as file:
+        # Skip lines until the start_line
+        for _ in range(start_line):
+            next(file)
+        # Process lines up to end_line
+        for line_num, line in enumerate(file, start=start_line):
+            if line_num > end_line:
+                break
+            line_s = line.strip()
+            if not line_s.startswith("#"):
+                r = parse_line(line_s, d_model)
+                [local_data.append(i) for i in r]
+    shared_list[index] = local_data
+
+
+def split_file_processing(file_path, num_cores, d_model):
+    total_lines = estimate_line_count(file_path)
+    lines_per_process = total_lines // num_cores
+
+    with Manager() as manager:
+        shared_list = manager.list(
+            [[] for _ in range(num_cores)]
+        )  # Initialize shared list
+
+        # Create arguments for each process, ensuring each process starts at the beginning of a line
+        args = [
+            (
+                file_path,
+                i * lines_per_process,
+                (total_lines if i == num_cores - 1 else (i + 1) * lines_per_process)
+                - 1,
+                shared_list,
+                i,
+                d_model,
+            )
+            for i in range(num_cores)
+        ]
+
+        with Pool(processes=num_cores) as pool:
+            pool.map(process_file_section, args)
+
+        combined_result = [item for sublist in shared_list for item in sublist]
+
+    return combined_result
+
+
 class LimitedDataset(Dataset):
     def __init__(
         self,
         sequence_file_path: str,
         d_model: int,
+        cpu_cores: int,
         bp_per_batch: int = 2,
         testing_data: bool = False,
         feature_to_find: str = "gene",
@@ -61,6 +141,9 @@ class LimitedDataset(Dataset):
         self.d_model = d_model
         if self.bp_per_batch > MAXIMAL_BP_PER_BATCH:
             raise "Maximal BP limit reached"
+        if cpu_cores < 0 or cpu_cores > multiprocessing.cpu_count():
+            raise "Problem with CPU cores"
+        self.cpu_cores = cpu_cores
         self.testing_data = testing_data
         self.feature_to_find = feature_to_find
         self.positions_to_look: tuple[int, int] = 0, 0
@@ -80,7 +163,9 @@ class LimitedDataset(Dataset):
         if self.ed_window > len(self.data):
             raise IndexError("Index out of bounds")
 
-        inputs_sequence: list[list[int]] = [self.data[i] for i in range(self.st_window, self.ed_window)]
+        inputs_sequence: list[list[int]] = [
+            self.data[i] for i in range(self.st_window, self.ed_window)
+        ]
         targets_sequence: list[list[int]] = [
             read_boundary_line(i, self.positions_to_look) for i in inputs_sequence
         ]
@@ -90,24 +175,14 @@ class LimitedDataset(Dataset):
             targets_sequence, dtype=torch.float64
         )
 
-    def convert_vector_to_torch(self, vector):
-        # Process each element in the vector. If an element is a list, convert it to a tensor
-        return [
-            torch.tensor(sub_vector, dtype=torch.float64)
-            if isinstance(sub_vector, list)
-            else sub_vector
-            for sub_vector in vector
-        ]
+    def read_data(self) -> None:
+        log.info(f"Loading data from file using cpu_cores: {self.cpu_cores}")
+        self.read_header()
+        self.data = split_file_processing(
+            self.sequence_file_path, self.cpu_cores, self.d_model
+        )
 
-    def read_sequence_line(self, idx: int) -> list[list[int]]:
-        with open(self.sequence_file_path, "r") as file:
-            for i, line in enumerate(file):
-                if i == idx:
-                    return self.parse_line(line)
-        return []
-
-    def read_data(self):
-        start_reading = False
+    def read_header(self):
         with open(self.sequence_file_path, "r") as file:
             for line in file:
                 if "#bp_vector_schema" in line.strip():
@@ -120,33 +195,19 @@ class LimitedDataset(Dataset):
                         self.feature_to_find,
                         self.max_feature_overlap,
                     )
-                    start_reading = True
-                    continue
-                if line == "\n":
-                    continue
-                if start_reading:
-                    sequences: list[list[int]] = self.parse_line(line)
-                    [self.data.append(i) for i in sequences]
-
-    def parse_line(self, line: str) -> list[list[int]]:
-        return [self.process_vector(vector) for vector in line.strip("\n").split("\t")]
-
-    def process_vector(self, vector: str) -> list[int]:
-        processed_vector = [int(element) for element in ast.literal_eval(vector)]
-
-        # Check if padding is needed
-        if len(processed_vector) < self.d_model:
-            # Calculate the number of padding elements needed
-            padding_size = self.d_model - len(processed_vector)
-
-            # Pad the vector with zeros
-            processed_vector.extend([0] * padding_size)
-        return processed_vector
 
     def pad_data(self) -> None:
-        reminder: int = len(self.data) % self.bp_per_batch
-        for i in range(reminder):
-            self.data.append(self.data[len(self.data) - 1])
+        if self.bp_per_batch > len(self.data):
+            padding_needed = self.bp_per_batch - len(self.data)
+        else:
+            padding_needed = (
+                self.bp_per_batch - (len(self.data) % self.bp_per_batch)
+            ) % self.bp_per_batch
+
+        if padding_needed > 0:
+            last_element = self.data[-1] if self.data else None
+            for _ in range(padding_needed):
+                self.data.append(last_element)
 
     def reset_window(self) -> None:
         self.st_window = 0

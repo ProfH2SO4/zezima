@@ -63,6 +63,7 @@ def train_model(
     start_time = time.time()
 
     start_epoch: int = 0
+
     checkpoint: dict | None = load_checkpoint_file(path_to_checkpoint)
     if checkpoint:
         start_epoch = restore_checkpoint(checkpoint, model, optimizer)

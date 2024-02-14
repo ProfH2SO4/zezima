@@ -87,8 +87,7 @@ def create_file_if_not_exists(path_to_file: str) -> None:
 
 
 def setup_model_data_loader(
-    file: str,
-    parsed_config: dict
+    file: str, parsed_config: dict
 ) -> tuple[TransformerModel, DataLoader, nn.CrossEntropyLoss, torch.Tensor]:
     """
     Prepares and returns the components required for training a Transformer model including the model itself,
@@ -101,6 +100,7 @@ def setup_model_data_loader(
     """
     dataset = LimitedDataset(
         file,
+        cpu_cores=parsed_config["NUM_CPU_CORES_DATASET"],
         bp_per_batch=parsed_config["SEQUENCE_LENGTH"],
         d_model=parsed_config["D_MODEL"],
     )
@@ -124,6 +124,7 @@ def setup_model_data_loader(
         parsed_config["SEQUENCE_LENGTH"],
         parsed_config["D_MODEL"],
     )
+    log.info(f"Number of workers: {data_loader.num_workers}")
     return model, data_loader, criterion, state_matrix
 
 
