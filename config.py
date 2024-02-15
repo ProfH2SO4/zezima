@@ -7,8 +7,6 @@ CHECKPOINT_PATH = "./checkpoint_models/fake_train_data.pth"
 TRAIN_MODE = True
 VALIDATE_MODE = False
 TEST_MODE = True
-BATCH_SIZE = 1  # for now keep 1
-NUM_OF_WORKERS = 0
 NUM_CPU_CORES_DATASET = 2
 
 # Optimizer

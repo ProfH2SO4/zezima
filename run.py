@@ -106,9 +106,9 @@ def setup_model_data_loader(
     )
     data_loader = DataLoader(
         dataset,
-        batch_size=parsed_config["BATCH_SIZE"],
+        batch_size=1,
         shuffle=False,
-        num_workers=parsed_config["NUM_OF_WORKERS"],
+        num_workers=0,
     )
     model = TransformerModel(
         input_size=parsed_config["D_MODEL"],
@@ -120,7 +120,7 @@ def setup_model_data_loader(
     )
     criterion = nn.CrossEntropyLoss()
     state_matrix = torch.zeros(
-        parsed_config["BATCH_SIZE"],
+        1,
         parsed_config["SEQUENCE_LENGTH"],
         parsed_config["D_MODEL"],
     )
