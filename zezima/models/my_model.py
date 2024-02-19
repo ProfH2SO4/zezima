@@ -17,6 +17,7 @@ class TransformerModel(nn.Module):
         dropout=0.1,
     ):
         super(TransformerModel, self).__init__()
+        self.embedding = nn.Embedding(num_embeddings=input_size, embedding_dim=d_model)
         self.pos_encoder = PositionalEncoding(d_model, seq_length, dropout)
         encoder_layers = TransformerEncoderLayer(
             d_model, nhead, dim_feedforward, dropout, batch_first=True
@@ -39,6 +40,7 @@ class TransformerModel(nn.Module):
                     init.constant_(m.bias, 0)
 
     def forward(self, src, state_matrix):
+        src = self.embedding(src)
         src = self.pos_encoder(src)
         src = self.encoder(src) * math.sqrt(self.d_model)
 

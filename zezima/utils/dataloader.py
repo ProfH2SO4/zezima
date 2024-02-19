@@ -13,7 +13,7 @@ MAXIMAL_BP_PER_BATCH = 100000
 
 
 def read_boundary_line(
-    sequence: list[int], positions_to_look: tuple[int, int]
+    sequence: list[int],
 ) -> list[int]:
     """
     Determine if the specified boundary in the sequence contains gene_start, gene_end or none of these.
@@ -25,12 +25,14 @@ def read_boundary_line(
     [0, 0, 1, 0] = ongoing/middle
     [0, 0, 0, 1] = gene_end
     """
-    start_pos, end_pos = positions_to_look
-    boundary_status = sequence[start_pos:end_pos]
-    boundary_status = [0] + boundary_status
-    if sum(boundary_status) == 0:
-        boundary_status[0] = 1
-    return boundary_status
+    last_pos: int = sequence[len(sequence) -1]
+    if last_pos == 0:
+        return [0, 0, 0, 0]
+    elif last_pos == 1:
+        return [0, 1, 0, 0]
+    elif last_pos == 2:
+        return [0, 0, 1, 0]
+    return [0, 0, 0, 1]
 
 
 def calculate_feature_boundary(
@@ -149,8 +151,10 @@ class LimitedDataset(Dataset):
         self.positions_to_look: tuple[int, int] = 0, 0
         self.max_feature_overlap = 1
         self.bp_vector_schema = []
-        self.data = []
+        self.data = []  # TODO delete cuz size 2x
+        self.encoded_data = []
         self.read_data()
+        self.encode_data()
         self.pad_data()
         self.st_window = 0
         self.ed_window = self.bp_per_batch
@@ -163,24 +167,68 @@ class LimitedDataset(Dataset):
         if self.ed_window > len(self.data):
             raise IndexError("Index out of bounds")
 
-        inputs_sequence: list[list[int]] = [
-            self.data[i] for i in range(self.st_window, self.ed_window)
+        inputs_sequence: list[torch.Tensor] = [
+            self.encoded_data[i] for i in range(self.st_window, self.ed_window)
         ]
+
         targets_sequence: list[list[int]] = [
-            read_boundary_line(i, self.positions_to_look) for i in inputs_sequence
+            read_boundary_line(self.data[i]) for i in range(self.st_window, self.ed_window)
         ]
         self.st_window = self.ed_window
         self.ed_window += self.bp_per_batch
-        return torch.tensor(inputs_sequence, dtype=torch.float64), torch.tensor(
-            targets_sequence, dtype=torch.float64
-        )
+        inputs_tensor = torch.cat(inputs_sequence, dim=0).squeeze(
+            1)  # Concatenates and then squeezes the middle dimension
+        targets_tensor = torch.stack([torch.tensor(target, dtype=torch.long) for target in targets_sequence], dim=0)
+        return inputs_tensor, targets_tensor
 
     def read_data(self) -> None:
         log.info(f"Loading data from file using cpu_cores: {self.cpu_cores}")
         self.read_header()
         self.data = split_file_processing(
-            self.sequence_file_path, self.cpu_cores, self.d_model
+            self.sequence_file_path,
+            self.cpu_cores,
+            self.d_model
         )
+        self.encode_data()
+
+    def encode_data(self):
+        from torch import nn
+        feature_embedding_dim = 8
+        # Define embedding layers for each categorical feature
+        embedding_layers = {
+            feature: nn.Embedding(num_embeddings=4, embedding_dim=feature_embedding_dim)
+            # Assuming each feature can have up to 4 states for simplicity
+            for feature in self.bp_vector_schema if feature not in ['A', 'C', 'G', 'T']  # Exclude binary features
+        }
+
+        for vector in self.data:
+            # Process binary features (nucleotides) directly and add a new dimension at the end
+            nucleotides = torch.tensor(vector[:4], dtype=torch.long).unsqueeze(
+                0)  # Adding a dimension to match feature vectors
+
+            # Initialize a list to hold the embeddings for categorical features
+            feature_vectors = []
+
+            # Start index for categorical features in the vector
+            cat_feature_start_index = 4
+
+            # Iterate over categorical features and their corresponding embedding layers
+            for feature in self.bp_vector_schema[cat_feature_start_index:]:
+                # Get the state for the current feature
+                feature_state = torch.tensor([vector[cat_feature_start_index]]).long()
+
+                # Get the embedding vector for the current feature state and remove the singleton dimension
+                feature_vector = embedding_layers[feature](feature_state)  # Squeezing to match nucleotides dimension
+
+                # Append the embedding vector to the list
+                feature_vectors.append(feature_vector)
+
+                # Increment the start index for the next feature
+                cat_feature_start_index += 1
+
+            # Concatenate all vectors (nucleotides + categorical feature embeddings) to form the final input vector for the model
+            model_input = torch.cat([nucleotides] + feature_vectors, dim=-1)
+            self.encoded_data.append(model_input)
 
     def read_header(self):
         with open(self.sequence_file_path, "r") as file:

@@ -111,7 +111,7 @@ def setup_model_data_loader(
         num_workers=0,
     )
     model = TransformerModel(
-        input_size=parsed_config["D_MODEL"],
+        input_size=4,
         d_model=parsed_config["D_MODEL"],
         nhead=parsed_config["NHEAD"],
         num_encoder_layers=parsed_config["NUM_ENCODER_LAYERS"],
