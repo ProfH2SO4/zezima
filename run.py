@@ -175,6 +175,7 @@ def main() -> None:
         if f.endswith(".txt")
     ]
     target_device: device = get_device()
+    create_file_if_not_exists(parsed_config["MODEL_PATH"])
     for file in train_files:
         model, data_loader, loss_function, state_matrix = setup_model_data_loader(
             file, parsed_config
