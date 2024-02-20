@@ -1,4 +1,4 @@
-INPUT_TRAIN_DIRECTORY = "./data/train_data"
+INPUT_TRAIN_DIRECTORY = "./data/fake_train_data"
 INPUT_TEST_DIRECTORY = "./data/fake_test_data"
 MODEL_PATH = "./saved_models/model_state.pth"
 CHECKPOINT_PATH = "./checkpoint_models/fake_train_data.pth"

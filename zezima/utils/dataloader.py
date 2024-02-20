@@ -25,7 +25,7 @@ def read_boundary_line(
     [0, 0, 1, 0] = ongoing/middle
     [0, 0, 0, 1] = gene_end
     """
-    last_pos: int = sequence[len(sequence) -1]
+    last_pos: int = sequence.pop(len(sequence) -1)
     if last_pos == 0:
         return [0, 0, 0, 0]
     elif last_pos == 1:
@@ -62,25 +62,17 @@ def estimate_line_count(file_path, sample_size=1024 * 1024):
         return os.path.getsize(file_path) // (len(sample) // estimated_lines)
 
 
-def parse_line(line: str, d_model: int) -> list[list[int]]:
-    return [process_vector(vector, d_model) for vector in line.strip("\n").split("\t")]
+def parse_line(line: str) -> list[list[int]]:
+    return [process_vector(vector) for vector in line.strip("\n").split("\t")]
 
 
-def process_vector(vector: str, d_model: int) -> list[int]:
+def process_vector(vector: str) -> list[int]:
     processed_vector = [int(element) for element in ast.literal_eval(vector)]
-
-    # Check if padding is needed
-    if len(processed_vector) < d_model:
-        # Calculate the number of padding elements needed
-        padding_size = d_model - len(processed_vector)
-
-        # Pad the vector with zeros
-        processed_vector.extend([0] * padding_size)
     return processed_vector
 
 
 def process_file_section(args):
-    file_path, start_line, end_line, shared_list, index, d_model = args
+    file_path, start_line, end_line, shared_list, index = args
     local_data = []
     with open(file_path, "r", encoding="utf-8") as file:
         # Skip lines until the start_line
@@ -92,12 +84,12 @@ def process_file_section(args):
                 break
             line_s = line.strip()
             if not line_s.startswith("#"):
-                r = parse_line(line_s, d_model)
+                r = parse_line(line_s)
                 [local_data.append(i) for i in r]
     shared_list[index] = local_data
 
 
-def split_file_processing(file_path, num_cores, d_model):
+def split_file_processing(file_path, num_cores):
     total_lines = estimate_line_count(file_path)
     lines_per_process = total_lines // num_cores
 
@@ -115,7 +107,6 @@ def split_file_processing(file_path, num_cores, d_model):
                 - 1,
                 shared_list,
                 i,
-                d_model,
             )
             for i in range(num_cores)
         ]
@@ -151,10 +142,8 @@ class LimitedDataset(Dataset):
         self.positions_to_look: tuple[int, int] = 0, 0
         self.max_feature_overlap = 1
         self.bp_vector_schema = []
-        self.data = []  # TODO delete cuz size 2x
-        self.encoded_data = []
+        self.data = []
         self.read_data()
-        self.encode_data()
         self.pad_data()
         self.st_window = 0
         self.ed_window = self.bp_per_batch
@@ -167,19 +156,13 @@ class LimitedDataset(Dataset):
         if self.ed_window > len(self.data):
             raise IndexError("Index out of bounds")
 
-        inputs_sequence: list[torch.Tensor] = [
-            self.encoded_data[i] for i in range(self.st_window, self.ed_window)
-        ]
-
-        targets_sequence: list[list[int]] = [
-            read_boundary_line(self.data[i]) for i in range(self.st_window, self.ed_window)
-        ]
+        inputs_sequence: list[list[int]] = [self.data[i] for i in range(self.st_window, self.ed_window)]
+        targets_sequence: list[list[int]] = [read_boundary_line(j) for j in inputs_sequence]
         self.st_window = self.ed_window
         self.ed_window += self.bp_per_batch
-        inputs_tensor = torch.cat(inputs_sequence, dim=0).squeeze(
-            1)  # Concatenates and then squeezes the middle dimension
-        targets_tensor = torch.stack([torch.tensor(target, dtype=torch.long) for target in targets_sequence], dim=0)
-        return inputs_tensor, targets_tensor
+        return torch.tensor(inputs_sequence, dtype=torch.float64), torch.tensor(
+            targets_sequence, dtype=torch.float64
+        )
 
     def read_data(self) -> None:
         log.info(f"Loading data from file using cpu_cores: {self.cpu_cores}")
@@ -187,9 +170,7 @@ class LimitedDataset(Dataset):
         self.data = split_file_processing(
             self.sequence_file_path,
             self.cpu_cores,
-            self.d_model
         )
-        self.encode_data()
 
     def encode_data(self):
         from torch import nn
@@ -255,7 +236,7 @@ class LimitedDataset(Dataset):
         if padding_needed > 0:
             last_element = self.data[-1] if self.data else None
             for _ in range(padding_needed):
-                self.data.append(last_element)
+                self.data.append(list(last_element))
 
     def reset_window(self) -> None:
         self.st_window = 0
