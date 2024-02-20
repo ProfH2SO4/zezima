@@ -117,6 +117,7 @@ def setup_model_data_loader(
         num_encoder_layers=parsed_config["NUM_ENCODER_LAYERS"],
         dim_feedforward=parsed_config["DIM_FEEDFORWARD"],
         seq_length=parsed_config["SEQUENCE_LENGTH"],
+        bp_vector_schema=dataset.bp_vector_schema,
     )
     criterion = nn.CrossEntropyLoss()
     state_matrix = torch.zeros(
@@ -175,6 +176,7 @@ def main() -> None:
         if f.endswith(".txt")
     ]
     target_device: device = get_device()
+    create_file_if_not_exists(parsed_config["MODEL_PATH"])
     for file in train_files:
         model, data_loader, loss_function, state_matrix = setup_model_data_loader(
             file, parsed_config
