@@ -4,6 +4,9 @@ MODEL_PATH = "./saved_models/model_state.pth"
 CHECKPOINT_PATH = "./checkpoint_models/fake_train_data.pth"
 
 
+USE_CHECKPOINT = False
+DEBUG_LEVEL = 2  #  Fow now only [1, 2], 2 => logs every iteration
+
 TRAIN_MODE = True
 VALIDATE_MODE = False
 TEST_MODE = True

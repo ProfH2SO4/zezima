@@ -27,32 +27,8 @@ def read_boundary_line(
     """
     last_pos: int = sequence.pop(len(sequence) - 1)
     if last_pos == 0:
-        return [0, 0, 0, 0]
-    elif last_pos == 1:
-        return [0, 1, 0, 0]
-    elif last_pos == 2:
-        return [0, 0, 1, 0]
-    return [0, 0, 0, 1]
-
-
-def calculate_feature_boundary(
-    vector_schema: list[str], feature_to_find: str, max_feature_overlap: int
-) -> tuple[int, int]:
-    base_pairs_count = 4  # Assuming 'A', 'C', 'G', 'T' are always the first 4
-
-    # Find the index of the feature in the vector schema
-    feature_index = vector_schema.index(feature_to_find)
-
-    # Calculate the start index of the feature in the expanded vector
-    # Each non-base-pair feature is represented by 3 elements ([start, ongoing, end]) times max_feature_overlap
-    start_index = (
-        base_pairs_count + (feature_index - base_pairs_count) * 3 * max_feature_overlap
-    )
-
-    # Calculate the end index (exclusive) of the feature in the expanded vector
-    end_index = start_index + 3 * max_feature_overlap
-
-    return start_index, end_index
+        return [0]
+    return [1]
 
 
 def estimate_line_count(file_path, sample_size=1024 * 1024):
@@ -184,12 +160,6 @@ class LimitedDataset(Dataset):
                     self.bp_vector_schema = ast.literal_eval(line.split("=")[1].strip())
                 if "#max_feature_overlap" in line.strip():
                     self.max_feature_overlap = int(line.split("=")[1].strip())
-                if line.strip() == "####END####":
-                    self.positions_to_look = calculate_feature_boundary(
-                        self.bp_vector_schema,
-                        self.feature_to_find,
-                        self.max_feature_overlap,
-                    )
 
     def pad_data(self) -> None:
         if self.bp_per_batch > len(self.data):

@@ -3,6 +3,35 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 from torch.nn import TransformerEncoder, TransformerEncoderLayer
+import torch.nn.functional as F
+
+
+class MultiClassFocalLoss(nn.Module):
+    def __init__(self, target_device, alpha, gamma=2, reduction="mean"):
+        super(MultiClassFocalLoss, self).__init__()
+        self.gamma = gamma
+        self.reduction = reduction
+        self.target_device = target_device
+        self.alpha = alpha.clone().detach().to(self.target_device)
+
+    def forward(self, inputs, targets):
+        # Convert inputs to probabilities
+        probs = F.softmax(inputs, dim=1)
+        targets_one_hot = F.one_hot(targets, num_classes=inputs.size(1)).to(
+            self.target_device
+        )
+
+        # Calculate the focal loss
+        ce_loss = F.cross_entropy(inputs, targets, reduction="none")
+        pt = torch.sum(probs * targets_one_hot, dim=1)
+        focal_loss = self.alpha[targets] * ((1 - pt) ** self.gamma) * ce_loss
+
+        if self.reduction == "mean":
+            return torch.mean(focal_loss)
+        elif self.reduction == "sum":
+            return torch.sum(focal_loss)
+        else:
+            return focal_loss
 
 
 class TransformerModel(nn.Module):
@@ -32,7 +61,7 @@ class TransformerModel(nn.Module):
         )
         self.encoder = nn.Linear(d_model, d_model)
         self.d_model = d_model
-        self.decoder = nn.Linear(d_model, 4)
+        self.decoder = nn.Linear(d_model, 2)
 
         # Apply He initialization to linear layers
         self.init_weights()
@@ -101,15 +130,13 @@ class CustomEmbedding(nn.Module):
     def forward(self, x: torch.Tensor):
         # x is expected to be of shape [batch_size, seq_len, d_model]
 
-        # Process binary features (nucleotides) directly; assume they are the first 4 features
-        # This retains the batch and sequence dimensions
         nucleotides = x[:, :, :4]  # No embedding needed for binary features
 
         # Initialize a list to hold the embeddings for categorical features, starting with nucleotides
         feature_vectors = [nucleotides]
-
-        # Start index for categorical features in the vector
-        cat_feature_start_index = 4
+        cat_feature_start_index: int = (
+            4  # Start index for categorical features in the vector
+        )
 
         # Iterate over categorical features and their corresponding embedding layers
         for feature in self.bp_vector_schema[

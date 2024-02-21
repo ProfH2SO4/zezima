@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch import device
 
 from zezima.utils.dataloader import LimitedDataset
-from zezima.models.my_model import TransformerModel
+from zezima.models.my_model import TransformerModel, MultiClassFocalLoss
 
 import config
 
@@ -87,7 +87,7 @@ def create_file_if_not_exists(path_to_file: str) -> None:
 
 
 def setup_model_data_loader(
-    file: str, parsed_config: dict
+    file: str, parsed_config: dict, target_device: device
 ) -> tuple[TransformerModel, DataLoader, nn.CrossEntropyLoss, torch.Tensor]:
     """
     Prepares and returns the components required for training a Transformer model including the model itself,
@@ -161,7 +161,7 @@ def main() -> None:
         file_path: str = config_.LOG_CONFIG["handlers"]["file"].get("filename")
         create_file_if_not_exists(file_path)
     log.set_up_logger(config_.LOG_CONFIG)
-
+    log.info(f"Config Values: {parsed_config}")
     train_directory: str = parsed_config["INPUT_TRAIN_DIRECTORY"]
     test_directory: str = parsed_config["INPUT_TEST_DIRECTORY"]
 
@@ -179,7 +179,7 @@ def main() -> None:
     create_file_if_not_exists(parsed_config["MODEL_PATH"])
     for file in train_files:
         model, data_loader, loss_function, state_matrix = setup_model_data_loader(
-            file, parsed_config
+            file, parsed_config, target_device
         )
 
         model, state_matrix = prepare_model_and_state(
@@ -200,6 +200,8 @@ def main() -> None:
                 parsed_config["MODEL_PATH"],
                 target_device,
                 parsed_config["CHECKPOINT_PATH"],
+                parsed_config["USE_CHECKPOINT"],
+                parsed_config["DEBUG_LEVEL"],
             )
 
         if parsed_config["VALIDATE_MODE"]:
@@ -210,7 +212,7 @@ def main() -> None:
         for file in test_files:
             log.info(f"Testing model on {file}")
             model, data_loader, loss_function, state_matrix = setup_model_data_loader(
-                file, parsed_config
+                file, parsed_config, target_device
             )
 
             model.load_state_dict(torch.load(parsed_config["MODEL_PATH"]))
