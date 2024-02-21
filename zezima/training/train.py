@@ -103,16 +103,16 @@ def train_model(
 
             if debug_level == 2:
                 log.debug(
-                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, batch_loss: {loss.item():.5f}"
+                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, batch_loss: {loss.item():.8f}"
                 )
             elif (batch_idx + 1) % logging_interval == 0:
                 log.debug(
-                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, batch_loss: {loss.item():.5f}"
+                    f"Epoch {epoch + 1}/{num_epochs}, Batch {batch_idx + 1}/{len(data_loader)}, batch_loss: {loss.item():.8f}"
                 )
         if use_checkpoint:
             save_checkpoint(model, optimizer, total_loss, epoch, path_to_checkpoint)
         average_loss = total_loss / len(data_loader)
-        log.debug(f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {average_loss:.5f}")
+        log.debug(f"Epoch {epoch + 1}/{num_epochs}, Average Loss: {average_loss:.8f}")
 
     total_runtime = time.time() - start_time
     log.info(f"Total Inference Time: {total_runtime} seconds")
