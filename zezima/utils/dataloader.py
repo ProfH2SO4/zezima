@@ -13,7 +13,7 @@ MAXIMAL_BP_PER_BATCH = 100000
 
 
 def read_boundary_line(
-    sequence: list[int], positions_to_look: tuple[int, int]
+    sequence: list[int],
 ) -> list[int]:
     """
     Determine if the specified boundary in the sequence contains gene_start, gene_end or none of these.
@@ -25,32 +25,10 @@ def read_boundary_line(
     [0, 0, 1, 0] = ongoing/middle
     [0, 0, 0, 1] = gene_end
     """
-    start_pos, end_pos = positions_to_look
-    boundary_status = sequence[start_pos:end_pos]
-    boundary_status = [0] + boundary_status
-    if sum(boundary_status) == 0:
-        boundary_status[0] = 1
-    return boundary_status
-
-
-def calculate_feature_boundary(
-    vector_schema: list[str], feature_to_find: str, max_feature_overlap: int
-) -> tuple[int, int]:
-    base_pairs_count = 4  # Assuming 'A', 'C', 'G', 'T' are always the first 4
-
-    # Find the index of the feature in the vector schema
-    feature_index = vector_schema.index(feature_to_find)
-
-    # Calculate the start index of the feature in the expanded vector
-    # Each non-base-pair feature is represented by 3 elements ([start, ongoing, end]) times max_feature_overlap
-    start_index = (
-        base_pairs_count + (feature_index - base_pairs_count) * 3 * max_feature_overlap
-    )
-
-    # Calculate the end index (exclusive) of the feature in the expanded vector
-    end_index = start_index + 3 * max_feature_overlap
-
-    return start_index, end_index
+    last_pos: int = sequence.pop(len(sequence) - 1)
+    if last_pos == 0:
+        return [0]
+    return [1]
 
 
 def estimate_line_count(file_path, sample_size=1024 * 1024):
@@ -60,25 +38,17 @@ def estimate_line_count(file_path, sample_size=1024 * 1024):
         return os.path.getsize(file_path) // (len(sample) // estimated_lines)
 
 
-def parse_line(line: str, d_model: int) -> list[list[int]]:
-    return [process_vector(vector, d_model) for vector in line.strip("\n").split("\t")]
+def parse_line(line: str) -> list[list[int]]:
+    return [process_vector(vector) for vector in line.strip("\n").split("\t")]
 
 
-def process_vector(vector: str, d_model: int) -> list[int]:
+def process_vector(vector: str) -> list[int]:
     processed_vector = [int(element) for element in ast.literal_eval(vector)]
-
-    # Check if padding is needed
-    if len(processed_vector) < d_model:
-        # Calculate the number of padding elements needed
-        padding_size = d_model - len(processed_vector)
-
-        # Pad the vector with zeros
-        processed_vector.extend([0] * padding_size)
     return processed_vector
 
 
 def process_file_section(args):
-    file_path, start_line, end_line, shared_list, index, d_model = args
+    file_path, start_line, end_line, shared_list, index = args
     local_data = []
     with open(file_path, "r", encoding="utf-8") as file:
         # Skip lines until the start_line
@@ -90,12 +60,12 @@ def process_file_section(args):
                 break
             line_s = line.strip()
             if not line_s.startswith("#"):
-                r = parse_line(line_s, d_model)
+                r = parse_line(line_s)
                 [local_data.append(i) for i in r]
     shared_list[index] = local_data
 
 
-def split_file_processing(file_path, num_cores, d_model):
+def split_file_processing(file_path, num_cores):
     total_lines = estimate_line_count(file_path)
     lines_per_process = total_lines // num_cores
 
@@ -113,7 +83,6 @@ def split_file_processing(file_path, num_cores, d_model):
                 - 1,
                 shared_list,
                 i,
-                d_model,
             )
             for i in range(num_cores)
         ]
@@ -164,13 +133,14 @@ class LimitedDataset(Dataset):
             raise IndexError("Index out of bounds")
 
         inputs_sequence: list[list[int]] = [
-            self.data[i] for i in range(self.st_window, self.ed_window)
+            list(self.data[i]) for i in range(self.st_window, self.ed_window)
         ]
         targets_sequence: list[list[int]] = [
-            read_boundary_line(i, self.positions_to_look) for i in inputs_sequence
+            read_boundary_line(j) for j in inputs_sequence
         ]
         self.st_window = self.ed_window
         self.ed_window += self.bp_per_batch
+
         return torch.tensor(inputs_sequence, dtype=torch.float64), torch.tensor(
             targets_sequence, dtype=torch.float64
         )
@@ -179,7 +149,8 @@ class LimitedDataset(Dataset):
         log.info(f"Loading data from file using cpu_cores: {self.cpu_cores}")
         self.read_header()
         self.data = split_file_processing(
-            self.sequence_file_path, self.cpu_cores, self.d_model
+            self.sequence_file_path,
+            self.cpu_cores,
         )
 
     def read_header(self):
@@ -189,12 +160,6 @@ class LimitedDataset(Dataset):
                     self.bp_vector_schema = ast.literal_eval(line.split("=")[1].strip())
                 if "#max_feature_overlap" in line.strip():
                     self.max_feature_overlap = int(line.split("=")[1].strip())
-                if line.strip() == "####END####":
-                    self.positions_to_look = calculate_feature_boundary(
-                        self.bp_vector_schema,
-                        self.feature_to_find,
-                        self.max_feature_overlap,
-                    )
 
     def pad_data(self) -> None:
         if self.bp_per_batch > len(self.data):
@@ -207,7 +172,7 @@ class LimitedDataset(Dataset):
         if padding_needed > 0:
             last_element = self.data[-1] if self.data else None
             for _ in range(padding_needed):
-                self.data.append(last_element)
+                self.data.append(list(last_element))
 
     def reset_window(self) -> None:
         self.st_window = 0

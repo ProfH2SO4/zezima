@@ -39,12 +39,14 @@ Follow these steps to create and activate your virtual environment:
 The input data file should be structured as follows, containing a header section and subsequent data vectors:
 ```
 #HEADER#
-#DATE=YYYY-MM-DD
+#DATE=2024-02-25T12:02:29.238927
 #pre_processing_version=[0, 1, 0]
-#bp_vector_schema=['A', 'C', 'G', 'T', 'PROMOTOR_MOTIF', 'ORF', 'exon', 'mRNA', 'miRNA', 'rRNA', 'CDS', 'POLY_ADENYL', 'gene']
-#description of feature:[0, 0, 0]=no_present, [1, 0, 0]=start, [0, 1, 0]=continuation/ongoing, [0, 0, 1]=end
-#max_feature_overlap=1
-[1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+#bp_vector_schema=['A', 'C', 'G', 'T', 'PROMOTOR_MOTIF', 'ORF', 'POLY_ADENYL', 'miRNA', 'rRNA', 'gene']
+#description of nucleotide:A=[1, 0, 0, 0], C=[0, 1, 0, 0], G=[0, 0, 1, 0], T=[0, 0, 0, 1]
+#description of feature:0=no_present, 1=start, 2=continuation/ongoing, 3=end
+#max_feature_overlap=0
+####END####
+[0, 1, 0, 0, 0, 0, 0, 0, 0, 0]	[0, 1, 0, 0, 0, 1, 0, 0, 0, 0]
 ```
 
 Each vector in the file represents information about a specific position on the DNA,

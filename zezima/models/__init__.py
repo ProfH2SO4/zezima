@@ -1,1 +1,1 @@
-from .my_model import TransformerModel
+from .my_model import TransformerModel, MultiClassFocalLoss

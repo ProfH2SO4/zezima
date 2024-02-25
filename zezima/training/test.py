@@ -91,7 +91,7 @@ def test_model(
             state_matrix = output_state_matrix
 
             _, targets_indices = targets.max(dim=-1)
-            output_indices = output.view(-1, 4)
+            output_indices = output.view(-1, 2)
             targets_indices = targets_indices.view(-1)
             # Compute loss
             loss = criterion(output_indices, targets_indices)
@@ -122,7 +122,7 @@ def test_model(
     correct_predictions = sum(p == t for p, t in zip(all_predictions, all_true_labels))
     total_predictions = len(all_predictions)
 
-    cm = confusion_matrix(all_true_labels, all_predictions)
+    cm = confusion_matrix(all_true_labels, all_predictions, labels=[0, 1])
     average_accuracy = correct_predictions / total_predictions
     precision = precision_score(
         all_true_labels, all_predictions, average="weighted", zero_division=1
